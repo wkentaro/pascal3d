@@ -5,16 +5,17 @@ import os
 import os.path as osp
 
 import chainer
-import numpy as np
-import scipy.misc
-import scipy.io
-import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # NOQA
+import numpy as np
+import scipy.io
+import scipy.misc
 
 
-def project_3d(vertices, obj):
+def project_3d(x3d, obj):
     viewpoint = obj['viewpoint']
     a = viewpoint['azimuth'][0][0][0][0] * math.pi / 180
     e = viewpoint['elevation'][0][0][0][0] * math.pi / 180
@@ -57,23 +58,27 @@ def project_3d(vertices, obj):
                   [0, M * f, 0],
                   [0, 0, -1]]).dot(R_)
 
+    # get points in camera frame
+    x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
+    x3d_camframe = np.dot(R_, x3d_)
+
     # project
-    vertices_ = np.hstack((vertices, np.ones((len(vertices), 1)))).T
-    x = np.dot(P, vertices_)
-    x[0, :] = x[0, :] / x[2, :]
-    x[1, :] = x[1, :] / x[2, :]
-    x = x[0:2, :]
+    x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
+    x2d = np.dot(P, x3d_)
+    x2d[0, :] = x2d[0, :] / x2d[2, :]
+    x2d[1, :] = x2d[1, :] / x2d[2, :]
+    x2d = x2d[0:2, :]
 
     # rotation matrix 2D
     R2d = np.array([[math.cos(theta), -math.sin(theta)],
                     [math.sin(theta), math.cos(theta)]])
-    x = np.dot(R2d, x).T
+    x2d = np.dot(R2d, x2d).T
 
     # transform to image coordinate
-    x[:, 1] *= -1
-    x = x + np.repeat(principal[np.newaxis, :], len(x), axis=0)
+    x2d[:, 1] *= -1
+    x2d = x2d + np.repeat(principal[np.newaxis, :], len(x2d), axis=0)
 
-    return x
+    return x2d, x3d_camframe
 
 
 def main():
@@ -106,10 +111,18 @@ def main():
                 print('No continuous viewpoint')
                 continue
             cad_index = obj['cad_index'][0][0] - 1
-            vertices = cad[cad_index]['vertices']
+            x3d = cad[cad_index]['vertices']
             faces = cad[cad_index]['faces']
 
-            x2d = project_3d(vertices, obj)
+            x2d, x3d_camframe = project_3d(x3d, obj)
+
+            ## DEBUG
+            # fig = plt.figure()
+            # ax = fig.gca(projection='3d')
+            # ax.plot(x3d_camframe[0], x3d_camframe[1], x3d_camframe[2])
+            # ax.plot([0], [0], [0], color='r', marker='o')
+            # plt.show()
+            # plt.cla()
 
             patches = []
             for face in faces:
