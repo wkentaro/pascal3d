@@ -15,19 +15,7 @@ import scipy.io
 import scipy.misc
 
 
-def project_vertices_3d_to_2d(
-        x3d,
-        azimuth,
-        elevation,
-        distance,
-        focal,
-        theta,
-        principal,
-        viewport,
-        ):
-    if distance == 0:
-        return []
-
+def get_homogenous_trans_matrix(azimuth, elevation, distance):
     # camera center
     C = np.zeros((3, 1))
     C[0] = distance * math.cos(elevation) * math.sin(azimuth)
@@ -49,17 +37,53 @@ def project_vertices_3d_to_2d(
         [0, math.cos(elevation), -math.sin(elevation)],
         [0, math.sin(elevation), math.cos(elevation)],
     ])  # rotation by elevation
-    R = np.dot(Rx, Rz)
+    R_rot = np.dot(Rx, Rz)
+    R = np.hstack((R_rot, np.dot(-R_rot, C)))
+
+    return R
+
+
+def transform_to_camera_frame(
+        x3d,
+        azimuth,
+        elevation,
+        distance,
+        ):
+    if distance == 0:
+        return []
+
+    R = get_homogenous_trans_matrix(azimuth, elevation, distance)
+
+    # get points in camera frame
+    x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
+    x3d_camframe = np.dot(R, x3d_)
+
+    return x3d_camframe
+
+
+def project_vertices_3d_to_2d(
+        x3d,
+        azimuth,
+        elevation,
+        distance,
+        focal,
+        theta,
+        principal,
+        viewport,
+        ):
+    if distance == 0:
+        return []
+
+    R = get_homogenous_trans_matrix(azimuth, elevation, distance)
 
     # perspective project matrix
     # however, we set the viewport to 3000, which makes the camera similar to
     # an affine-camera.
     # Exploring a real perspective camera can be a future work.
     M = viewport
-    R_ = np.hstack((R, np.dot(-R, C)))
     P = np.array([[M * focal, 0, 0],
                   [0, M * focal, 0],
-                  [0, 0, -1]]).dot(R_)
+                  [0, 0, -1]]).dot(R)
 
     # project
     x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
