@@ -240,12 +240,3 @@ class Pascal3DDataset(object):
 
         plt.show()
         plt.cla()
-
-
-if __name__ == '__main__':
-    data_type = 'val'
-    dataset = Pascal3DDataset(data_type)
-    print('Total size of {} data is: {}'.format(data_type, len(dataset)))
-    for i in xrange(len(dataset)):
-        print('Displaying: {}'.format(i))
-        dataset.overlay_cad(i)
