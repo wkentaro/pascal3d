@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import os.path as osp
-
-import chainer
-import matplotlib.pyplot as plt
-# required for 3D plot
-from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
 import pascal3d
 

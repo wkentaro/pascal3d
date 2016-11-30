@@ -235,8 +235,6 @@ class Pascal3DDataset(object):
 
         ax = fig.gca(projection='3d')
 
-        img = None
-
         data_id = self.data_ids[i]
         for cls in self.class_names:
             ann_file = osp.join(
