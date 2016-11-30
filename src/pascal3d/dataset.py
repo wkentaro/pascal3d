@@ -57,7 +57,7 @@ def transform_to_camera_frame(
 
     # get points in camera frame
     x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
-    x3d_camframe = np.dot(R, x3d_)
+    x3d_camframe = np.dot(R, x3d_).T
 
     return x3d_camframe
 
@@ -230,7 +230,7 @@ class Pascal3DDataset(object):
 
         return img
 
-    def show_cad(self, i):
+    def show_cad(self, i, camframe=False):
         fig = plt.figure()
 
         ax = fig.gca(projection='3d')
@@ -256,10 +256,19 @@ class Pascal3DDataset(object):
                 cad_index = obj['cad_index']
 
                 vertices_3d = cad[cad_index]['vertices']
-                faces = cad[cad_index]['faces']
+                # faces = cad[cad_index]['faces']
+
+                if camframe:
+                    vertices_3d = transform_to_camera_frame(
+                        vertices_3d,
+                        obj['viewpoint']['azimuth'],
+                        obj['viewpoint']['elevation'],
+                        obj['viewpoint']['distance'],
+                    )
+                    ax.plot([0], [0], [0], marker='o', color='r')
 
                 x, y, z = zip(*vertices_3d)
-                ax.plot(x, y, z)
+                ax.plot(x, y, z, color='b')
                 plt.show()
 
     def show_cad_overlay(self, i):
