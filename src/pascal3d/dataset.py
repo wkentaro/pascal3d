@@ -4,6 +4,7 @@ import os
 import os.path as osp
 
 import chainer
+import cv2
 import math
 import matplotlib
 from matplotlib.collections import PatchCollection
@@ -119,6 +120,8 @@ class Pascal3DAnnotation(object):
                 continue
 
             cad_index = obj['cad_index'][0][0] - 1
+            bbox = obj['bbox'][0]
+            anchors = obj['anchors']
 
             viewpoint = obj['viewpoint']
             azimuth = viewpoint['azimuth'][0][0][0][0] * math.pi / 180
@@ -132,6 +135,8 @@ class Pascal3DAnnotation(object):
 
             self.objects.append({
                 'cad_index': cad_index,
+                'bbox': bbox,
+                'anchors': anchors,
                 'viewpoint': {
                     'azimuth': azimuth,
                     'elevation': elevation,
@@ -187,7 +192,45 @@ class Pascal3DDataset(object):
     def __len__(self):
         return len(self.data_ids)
 
-    def overlay_cad(self, i):
+    def draw_annotation(self, i):
+        data_id = self.data_ids[i]
+
+        img = None
+
+        for cls in self.class_names:
+            ann_file = osp.join(
+                self.dataset_dir,
+                'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
+            if not osp.exists(ann_file):
+                continue
+
+            ann = Pascal3DAnnotation(ann_file)
+
+            # img file is identical for one data_id
+            if img is None:
+                img_file = osp.join(
+                    self.dataset_dir,
+                    'Images/{}_pascal'.format(cls),
+                    ann.img_filename)
+                img = scipy.misc.imread(img_file)
+
+            for obj in ann.objects:
+                x1, y1, x2, y2 = obj['bbox']
+                cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0))
+
+                if not obj['anchors']:
+                    continue
+                anchors = obj['anchors'][0][0]
+                for name in anchors.dtype.names:
+                    anchor = anchors[name]
+                    if anchor['status'] != 1:
+                        continue
+                    x, y = anchor['location'][0][0][0]
+                    cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), -1)
+
+        return img
+
+    def show_cad_overlay(self, i):
         ax1 = plt.subplot(121)
         plt.axis('off')
         ax2 = plt.subplot(122)
