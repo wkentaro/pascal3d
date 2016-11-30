@@ -230,6 +230,38 @@ class Pascal3DDataset(object):
 
         return img
 
+    def show_cad(self, i):
+        fig = plt.figure()
+
+        ax = fig.gca(projection='3d')
+
+        img = None
+
+        data_id = self.data_ids[i]
+        for cls in self.class_names:
+            ann_file = osp.join(
+                self.dataset_dir,
+                'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
+            if not osp.exists(ann_file):
+                continue
+
+            ann = Pascal3DAnnotation(ann_file)
+
+            cad_file = osp.join(
+                self.dataset_dir,
+                'CAD/{}.mat'.format(cls))
+            cad = scipy.io.loadmat(cad_file)[cls][0]
+
+            for obj in ann.objects:
+                cad_index = obj['cad_index']
+
+                vertices_3d = cad[cad_index]['vertices']
+                faces = cad[cad_index]['faces']
+
+                x, y, z = zip(*vertices_3d)
+                ax.plot(x, y, z)
+                plt.show()
+
     def show_cad_overlay(self, i):
         ax1 = plt.subplot(121)
         plt.axis('off')
