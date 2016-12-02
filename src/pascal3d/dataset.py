@@ -18,7 +18,7 @@ import shlex
 import subprocess
 
 
-def get_homogenous_trans_matrix(azimuth, elevation, distance):
+def get_transformation_matrix(azimuth, elevation, distance):
     # camera center
     C = np.zeros((3, 1))
     C[0] = distance * math.cos(elevation) * math.sin(azimuth)
@@ -42,6 +42,7 @@ def get_homogenous_trans_matrix(azimuth, elevation, distance):
     ])  # rotation by elevation
     R_rot = np.dot(Rx, Rz)
     R = np.hstack((R_rot, np.dot(-R_rot, C)))
+    R = np.vstack((R, [0, 0, 0, 1]))
 
     return R
 
@@ -55,11 +56,11 @@ def transform_to_camera_frame(
     if distance == 0:
         return []
 
-    R = get_homogenous_trans_matrix(azimuth, elevation, distance)
+    R = get_transformation_matrix(azimuth, elevation, distance)
 
     # get points in camera frame
     x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
-    x3d_camframe = np.dot(R, x3d_).T
+    x3d_camframe = np.dot(R[:3, :4], x3d_).T
 
     return x3d_camframe
 
@@ -77,7 +78,7 @@ def project_vertices_3d_to_2d(
     if distance == 0:
         return []
 
-    R = get_homogenous_trans_matrix(azimuth, elevation, distance)
+    R = get_transformation_matrix(azimuth, elevation, distance)
 
     # perspective project matrix
     # however, we set the viewport to 3000, which makes the camera similar to
@@ -86,7 +87,7 @@ def project_vertices_3d_to_2d(
     M = viewport
     P = np.array([[M * focal, 0, 0],
                   [0, M * focal, 0],
-                  [0, 0, -1]]).dot(R)
+                  [0, 0, -1]]).dot(R[:3, :4])
 
     # project
     x3d_ = np.hstack((x3d, np.ones((len(x3d), 1)))).T
