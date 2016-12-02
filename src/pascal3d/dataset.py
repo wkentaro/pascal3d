@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import division
+from __future__ import print_function
+
 import os
 import os.path as osp
 
@@ -160,6 +163,9 @@ class Pascal3DDataset(object):
         return img
 
     def show_cad(self, i, camframe=False):
+        if camframe:
+            return self.show_cad_camframe(i)
+
         img, objects, class_cads = self._get_data(i)
 
         for cls, obj in objects:
@@ -173,43 +179,58 @@ class Pascal3DDataset(object):
             ax.plot(x, y, z, color='b')
             plt.show()
 
-        # fig = plt.figure()
-        #
-        # ax = fig.gca(projection='3d')
-        #
-        # data_id = self.data_ids[i]
-        # for cls in self.class_names:
-        #     ann_file = osp.join(
-        #         self.dataset_dir,
-        #         'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
-        #     if not osp.exists(ann_file):
-        #         continue
-        #
-        #     ann = Pascal3DAnnotation(ann_file)
-        #
-        #     cad_file = osp.join(
-        #         self.dataset_dir,
-        #         'CAD/{}.mat'.format(cls))
-        #     cad = scipy.io.loadmat(cad_file)[cls][0]
-        #
-        #     for obj in ann.objects:
-        #         cad_index = obj['cad_index']
-        #
-        #         vertices_3d = cad[cad_index]['vertices']
-        #         # faces = cad[cad_index]['faces']
-        #
-        #         if camframe:
-        #             vertices_3d = utils.transform_to_camera_frame(
-        #                 vertices_3d,
-        #                 obj['viewpoint']['azimuth'],
-        #                 obj['viewpoint']['elevation'],
-        #                 obj['viewpoint']['distance'],
-        #             )
-        #             ax.plot([0], [0], [0], marker='o', color='r')
-        #
-        #         x, y, z = zip(*vertices_3d)
-        #         ax.plot(x, y, z, color='b')
-        #         plt.show()
+    def show_cad_camframe(self, i):
+        img, objects, class_cads = self._get_data(i)
+
+        ax1 = plt.subplot(1, 2, 1)
+        ax1.imshow(img)
+        plt.axis('off')
+
+        ax2 = plt.subplot(1, 2, 2, projection='3d')
+        ax2.plot([0], [0], [0], marker='o')
+
+        max_x = min_x = 0
+        max_y = min_y = 0
+        max_z = min_z = 0
+        for cls, obj in objects:
+            cad_index = obj['cad_index']
+            cad = class_cads[cls]
+
+            vertices_3d = cad[cad_index]['vertices']
+
+            vertices_3d_camframe = utils.transform_to_camera_frame(
+                vertices_3d,
+                obj['viewpoint']['azimuth'],
+                obj['viewpoint']['elevation'],
+                obj['viewpoint']['distance'],
+            )
+
+            # XXX: Not sure this is correct...
+            delta = (obj['viewpoint']['principal'] /
+                     obj['viewpoint']['viewport'])
+            vertices_3d_camframe[:, 0] += delta[0] * 10
+            vertices_3d_camframe[:, 1] -= delta[1] * 10
+
+            x, y, z = zip(*vertices_3d_camframe)
+            ax2.plot(x, y, z)
+
+            max_x = max(max_x, max(x))
+            max_y = max(max_y, max(y))
+            max_z = max(max_z, max(z))
+            min_x = min(min_x, min(x))
+            min_y = min(min_y, min(y))
+            min_z = min(min_z, min(z))
+
+        # align bounding box
+        max_range = max(max_x - min_x, max_y - min_y, max_z - min_z) * 0.5
+        mid_x = (max_x + min_x) * 0.5
+        mid_y = (max_y + min_y) * 0.5
+        mid_z = (max_z + min_z) * 0.5
+        ax2.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax2.set_ylim(mid_y - max_range, mid_y + max_range)
+        ax2.set_zlim(mid_z - max_range, mid_z + max_range)
+
+        plt.show()
 
     def show_cad_overlay(self, i):
         img, objects, class_cads = self._get_data(i)
