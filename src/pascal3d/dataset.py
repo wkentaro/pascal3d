@@ -270,6 +270,9 @@ class Pascal3DDataset(object):
                 cad_id = osp.splitext(off_file)[0]
                 ply_file = osp.join(cad_dir, cad_id + '.ply')
                 pcd_file = osp.join(cad_dir, cad_id + '.pcd')
+                if osp.exists(pcd_file):
+                    print('PCD file exists, so skipping: {}'.format(pcd_file))
+                    continue
                 # off file -> ply file
                 cmd = 'meshlabserver -i {} -o {}'.format(off_file, ply_file)
                 subprocess.call(shlex.split(cmd))
