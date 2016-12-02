@@ -6,7 +6,7 @@ import pascal3d
 def main():
     dataset = pascal3d.dataset.Pascal3DDataset('val')
     for i in xrange(len(dataset)):
-        dataset.overlay_cad(i)
+        dataset.show_cad_overlay(i)
 
 
 if __name__ == '__main__':

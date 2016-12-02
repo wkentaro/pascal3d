@@ -194,21 +194,27 @@ class Pascal3DDataset(object):
     def __len__(self):
         return len(self.data_ids)
 
-    def draw_annotation(self, i):
+    def _get_data(self, i):
         data_id = self.data_ids[i]
 
         img = None
-
+        objects = []
+        class_cads = {}
         for cls in self.class_names:
             ann_file = osp.join(
                 self.dataset_dir,
                 'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
             if not osp.exists(ann_file):
                 continue
-
             ann = Pascal3DAnnotation(ann_file)
 
-            # img file is identical for one data_id
+            if cls not in class_cads:
+                cad_file = osp.join(
+                    self.dataset_dir,
+                    'CAD/{}.mat'.format(cls))
+                cad = scipy.io.loadmat(cad_file)[cls][0]
+                class_cads[cls] = cad
+
             if img is None:
                 img_file = osp.join(
                     self.dataset_dir,
@@ -217,113 +223,110 @@ class Pascal3DDataset(object):
                 img = scipy.misc.imread(img_file)
 
             for obj in ann.objects:
-                x1, y1, x2, y2 = obj['bbox']
-                cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0))
+                objects.append((cls, obj))
 
-                if not obj['anchors']:
+        return img, objects, class_cads
+
+    def draw_annotation(self, i):
+        img, objects, _ = self._get_data(i)
+
+        for cls, obj in objects:
+            x1, y1, x2, y2 = obj['bbox']
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0))
+
+            if not obj['anchors']:
+                continue
+            anchors = obj['anchors'][0][0]
+            for name in anchors.dtype.names:
+                anchor = anchors[name]
+                if anchor['status'] != 1:
                     continue
-                anchors = obj['anchors'][0][0]
-                for name in anchors.dtype.names:
-                    anchor = anchors[name]
-                    if anchor['status'] != 1:
-                        continue
-                    x, y = anchor['location'][0][0][0]
-                    cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), -1)
+                x, y = anchor['location'][0][0][0]
+                cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), -1)
 
         return img
 
     def show_cad(self, i, camframe=False):
-        fig = plt.figure()
+        img, objects, class_cads = self._get_data(i)
 
-        ax = fig.gca(projection='3d')
+        for cls, obj in objects:
+            cad_index = obj['cad_index']
+            cad = class_cads[cls]
 
-        data_id = self.data_ids[i]
-        for cls in self.class_names:
-            ann_file = osp.join(
-                self.dataset_dir,
-                'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
-            if not osp.exists(ann_file):
-                continue
+            vertices_3d = cad[cad_index]['vertices']
 
-            ann = Pascal3DAnnotation(ann_file)
+            ax = plt.figure().gca(projection='3d')
+            x, y, z = zip(*vertices_3d)
+            ax.plot(x, y, z, color='b')
+            plt.show()
 
-            cad_file = osp.join(
-                self.dataset_dir,
-                'CAD/{}.mat'.format(cls))
-            cad = scipy.io.loadmat(cad_file)[cls][0]
-
-            for obj in ann.objects:
-                cad_index = obj['cad_index']
-
-                vertices_3d = cad[cad_index]['vertices']
-                # faces = cad[cad_index]['faces']
-
-                if camframe:
-                    vertices_3d = transform_to_camera_frame(
-                        vertices_3d,
-                        obj['viewpoint']['azimuth'],
-                        obj['viewpoint']['elevation'],
-                        obj['viewpoint']['distance'],
-                    )
-                    ax.plot([0], [0], [0], marker='o', color='r')
-
-                x, y, z = zip(*vertices_3d)
-                ax.plot(x, y, z, color='b')
-                plt.show()
+        # fig = plt.figure()
+        #
+        # ax = fig.gca(projection='3d')
+        #
+        # data_id = self.data_ids[i]
+        # for cls in self.class_names:
+        #     ann_file = osp.join(
+        #         self.dataset_dir,
+        #         'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
+        #     if not osp.exists(ann_file):
+        #         continue
+        #
+        #     ann = Pascal3DAnnotation(ann_file)
+        #
+        #     cad_file = osp.join(
+        #         self.dataset_dir,
+        #         'CAD/{}.mat'.format(cls))
+        #     cad = scipy.io.loadmat(cad_file)[cls][0]
+        #
+        #     for obj in ann.objects:
+        #         cad_index = obj['cad_index']
+        #
+        #         vertices_3d = cad[cad_index]['vertices']
+        #         # faces = cad[cad_index]['faces']
+        #
+        #         if camframe:
+        #             vertices_3d = transform_to_camera_frame(
+        #                 vertices_3d,
+        #                 obj['viewpoint']['azimuth'],
+        #                 obj['viewpoint']['elevation'],
+        #                 obj['viewpoint']['distance'],
+        #             )
+        #             ax.plot([0], [0], [0], marker='o', color='r')
+        #
+        #         x, y, z = zip(*vertices_3d)
+        #         ax.plot(x, y, z, color='b')
+        #         plt.show()
 
     def show_cad_overlay(self, i):
+        img, objects, class_cads = self._get_data(i)
+
         ax1 = plt.subplot(121)
         plt.axis('off')
+        ax1.imshow(img)
+
         ax2 = plt.subplot(122)
         plt.axis('off')
+        ax2.imshow(img)
 
-        img = None
+        for cls, obj in objects:
+            cad_index = obj['cad_index']
+            cad = class_cads[cls][cad_index]
 
-        data_id = self.data_ids[i]
-        for cls in self.class_names:
+            vertices_3d = cad['vertices']
+            faces = cad['faces']
 
-            ann_file = osp.join(
-                self.dataset_dir,
-                'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
-            if not osp.exists(ann_file):
-                continue
+            vertices_2d = project_vertices_3d_to_2d(
+                vertices_3d, **obj['viewpoint'])
 
-            ann = Pascal3DAnnotation(ann_file)
-
-            # img file is identical for one data_id
-            if img is None:
-                img_file = osp.join(
-                    self.dataset_dir,
-                    'Images/{}_pascal'.format(cls),
-                    ann.img_filename)
-                img = scipy.misc.imread(img_file)
-                ax1.imshow(img)
-                ax2.imshow(img)
-
-            cad_file = osp.join(
-                self.dataset_dir,
-                'CAD/{}.mat'.format(cls))
-            cad = scipy.io.loadmat(cad_file)[cls][0]
-
-            for obj in ann.objects:
-                cad_index = obj['cad_index']
-
-                vertices_3d = cad[cad_index]['vertices']
-                faces = cad[cad_index]['faces']
-
-                vertices_2d = project_vertices_3d_to_2d(
-                    vertices_3d, **obj['viewpoint'])
-
-                patches = []
-                for face in faces:
-                    points = [vertices_2d[i_vertex-1] for i_vertex in face]
-                    poly = Polygon(points, True)
-                    patches.append(poly)
-                p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.4)
-                ax2.add_collection(p)
-
+            patches = []
+            for face in faces:
+                points = [vertices_2d[i_vertex-1] for i_vertex in face]
+                poly = Polygon(points, True)
+                patches.append(poly)
+            p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.4)
+            ax2.add_collection(p)
         plt.show()
-        plt.cla()
 
     def convert_mesh_to_pcd(self):
         for cls in self.class_names:
