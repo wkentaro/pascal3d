@@ -240,19 +240,3 @@ class Pascal3DDataset(object):
             p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.4)
             ax2.add_collection(p)
         plt.show()
-
-    def convert_mesh_to_pcd(self):
-        for cls in self.class_names:
-            cad_dir = osp.join(self.dataset_dir, 'CAD', cls)
-            for off_file in os.listdir(cad_dir):
-                off_file = osp.join(cad_dir, off_file)
-                cad_id = osp.splitext(off_file)[0]
-                ply_file = osp.join(cad_dir, cad_id + '.ply')
-                pcd_file = osp.join(cad_dir, cad_id + '.pcd')
-                # off file -> ply file
-                cmd = 'meshlabserver -i {} -o {}'.format(off_file, ply_file)
-                subprocess.call(shlex.split(cmd))
-                # ply file -> pcd file
-                cmd = 'pcl_mesh2pcd {} {} -no_vis_result'.format(
-                    ply_file, pcd_file)
-                subprocess.call(shlex.split(cmd))
