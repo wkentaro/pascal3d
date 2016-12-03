@@ -14,6 +14,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import scipy.io
 import scipy.misc
@@ -168,15 +169,78 @@ class Pascal3DDataset(object):
 
         img, objects, class_cads = self._get_data(i)
 
+        ax1 = plt.subplot(1, 2, 1)
+        plt.axis('off')
+        ax1.imshow(img)
+
         for cls, obj in objects:
             cad_index = obj['cad_index']
             cad = class_cads[cls]
 
-            vertices_3d = cad[cad_index]['vertices']
+            ax2 = plt.subplot(1, 2, 2, projection='3d')
 
-            ax = plt.figure().gca(projection='3d')
+            # show camera model
+            height, width = img.shape[:2]
+            x = utils.get_camera_polygon(
+                height=height,
+                width=width,
+                theta=obj['viewpoint']['theta'],
+                focal=obj['viewpoint']['focal'],
+                principal=obj['viewpoint']['principal'],
+                viewport=obj['viewpoint']['viewport'],
+            )
+            R = utils.get_transformation_matrix(
+                obj['viewpoint']['azimuth'],
+                obj['viewpoint']['elevation'],
+                obj['viewpoint']['distance'],
+            )
+            x = np.hstack((x, np.ones((len(x), 1), dtype=np.float64)))
+            x = np.dot(np.linalg.inv(R)[:3, :4], x.T).T
+            x0, x1, x2, x3, x4 = x
+            verts = [
+                [x0, x1, x2],
+                [x0, x2, x3],
+                [x0, x3, x4],
+                [x0, x4, x1],
+                [x1, x2, x3, x4],
+            ]
+            ax2.add_collection3d(
+                Poly3DCollection([verts[0]], facecolors='r', linewidths=1))
+            ax2.add_collection3d(
+                Poly3DCollection(verts[1:], facecolors='w',
+                                 linewidths=1, alpha=0.5))
+            x, y, z = zip(*x)
+            ax2.plot(x, y, z)  # to show the camera model in the range
+
+            max_x = max(x)
+            max_y = max(y)
+            max_z = max(z)
+            min_x = min(x)
+            min_y = min(y)
+            min_z = min(z)
+
+            # display the cad model
+            vertices_3d = cad[cad_index]['vertices']
             x, y, z = zip(*vertices_3d)
-            ax.plot(x, y, z, color='b')
+            ax2.plot(x, y, z, color='b')
+
+            max_x = max(max_x, max(x))
+            max_y = max(max_y, max(y))
+            max_z = max(max_z, max(z))
+            min_x = min(min_x, min(x))
+            min_y = min(min_y, min(y))
+            min_z = min(min_z, min(z))
+
+            # align bounding box
+            max_range = max(max_x - min_x, max_y - min_y, max_z - min_z) * 0.5
+            mid_x = (max_x + min_x) * 0.5
+            mid_y = (max_y + min_y) * 0.5
+            mid_z = (max_z + min_z) * 0.5
+            ax2.set_xlim(mid_x - max_range, mid_x + max_range)
+            ax2.set_ylim(mid_y - max_range, mid_y + max_range)
+            ax2.set_zlim(mid_z - max_range, mid_z + max_range)
+
+            plt.tight_layout()
             plt.show()
 
     def show_cad_camframe(self, i):

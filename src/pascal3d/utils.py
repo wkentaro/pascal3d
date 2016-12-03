@@ -92,3 +92,35 @@ def project_vertices_3d_to_2d(
     x2d = x2d + np.repeat(principal[np.newaxis, :], len(x2d), axis=0)
 
     return x2d
+
+
+def get_camera_polygon(height, width, theta, focal, principal, viewport):
+    # rotate the camera model
+    R2d = np.array([[math.cos(theta), -math.sin(theta)],
+                    [math.sin(theta), math.cos(theta)]])
+    # projection matrix
+    M = viewport
+    P = np.array([
+        [M * focal, 0, 0],
+        [0, M * focal, 0],
+        [0, 0, -1],
+    ])
+
+    x0 = np.array([0, 0, 0], dtype=np.float64)
+
+    # rotate and project the points
+    x = np.array([
+        [0, 0],
+        [width, 0],
+        [width, height],
+        [0, height],
+    ], dtype=np.float64)
+    x -= principal
+    x[:, 1] *= -1
+    x = np.dot(np.linalg.inv(R2d), x.T).T
+    x = np.hstack((x, np.ones((len(x), 1), dtype=np.float64)))
+    x = np.dot(np.linalg.inv(P), x.T).T
+
+    x = np.vstack((x0, x))
+
+    return x
