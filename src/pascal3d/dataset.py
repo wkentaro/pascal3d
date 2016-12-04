@@ -71,6 +71,7 @@ class Pascal3DAnnotation(object):
 class Pascal3DDataset(object):
 
     class_names = [
+        'background',
         'aeroplane',
         'bicycle',
         'boat',
@@ -91,7 +92,7 @@ class Pascal3DDataset(object):
             'pascal3d/PASCAL3D+_release1.1')
         # get all data ids
         data_ids = []
-        for cls in self.class_names:
+        for cls in self.class_names[1:]:
             cls_ann_dir = osp.join(
                 self.dataset_dir, 'Annotations/{}_pascal'.format(cls))
             for ann_file in os.listdir(cls_ann_dir):
@@ -117,7 +118,7 @@ class Pascal3DDataset(object):
         img = None
         objects = []
         class_cads = {}
-        for cls in self.class_names:
+        for cls in self.class_names[1:]:
             ann_file = osp.join(
                 self.dataset_dir,
                 'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
@@ -327,10 +328,43 @@ class Pascal3DDataset(object):
             ax2.add_collection(p)
         plt.show()
 
+    def show_pcd_overlay(self, i):
+        img, objects, class_cads = self._get_data(i)
+
+        ax1 = plt.subplot(121)
+        plt.axis('off')
+        ax1.imshow(img)
+
+        ax2 = plt.subplot(122)
+        plt.axis('off')
+
+        n_classes = len(self.class_names)
+        colormap = utils.label_colormap(n_classes)
+        for cls, obj in objects:
+            cls_id = self.class_names.index(cls)
+            cad_index = obj['cad_index']
+            pcd_file = osp.join(self.dataset_dir, 'CAD', cls,
+                                '{:02}.pcd'.format(cad_index + 1))
+            points_3d = utils.load_pcd(pcd_file)
+            points_2d = utils.project_vertices_3d_to_2d(
+                points_3d, **obj['viewpoint'])
+            img = img.astype(np.float64)
+            height, width = img.shape[:2]
+            for x, y in points_2d:
+                if x > width or x < 0 or y > height or y < 0:
+                    continue
+                # img[y, x] = (img[y, x] * 0.8) + (colormap[cls_id] * 255 * 0.2)
+                img[y, x] = colormap[cls_id] * 255
+            img = img.astype(np.uint8)
+
+        ax2.imshow(img)
+        plt.tight_layout()
+        plt.show()
+
     def convert_mesh_to_pcd(self, dry_run=False):
         # scrape off files
         off_files = []
-        for cls in self.class_names:
+        for cls in self.class_names[1:]:
             cad_dir = osp.join(self.dataset_dir, 'CAD', cls)
             for off_file in os.listdir(cad_dir):
                 off_file = osp.join(cad_dir, off_file)
