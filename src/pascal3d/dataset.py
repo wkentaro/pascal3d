@@ -169,15 +169,16 @@ class Pascal3DDataset(object):
 
         img, objects, class_cads = self._get_data(i)
 
-        ax1 = plt.subplot(1, 2, 1)
-        plt.axis('off')
-        ax1.imshow(img)
-
         for cls, obj in objects:
-            cad_index = obj['cad_index']
-            cad = class_cads[cls]
+            # show image
+            ax1 = plt.subplot(1, 2, 1)
+            plt.axis('off')
+            ax1.imshow(img)
 
             ax2 = plt.subplot(1, 2, 2, projection='3d')
+
+            cad_index = obj['cad_index']
+            cad = class_cads[cls]
 
             # show camera model
             height, width = img.shape[:2]
