@@ -231,6 +231,8 @@ class Pascal3DDataset(object):
                 x, y = anchor['location'][0][0][0]
                 cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), -1)
         ax1.imshow(img)
+
+        plt.tight_layout()
         plt.show()
 
     def show_cad(self, i, camframe=False):
@@ -377,6 +379,7 @@ class Pascal3DDataset(object):
         ax2.set_ylim(mid_y - max_range, mid_y + max_range)
         ax2.set_zlim(mid_z - max_range, mid_z + max_range)
 
+        plt.tight_layout()
         plt.show()
 
     def show_cad_overlay(self, i):
@@ -413,6 +416,8 @@ class Pascal3DDataset(object):
                 patches.append(poly)
             p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=0.4)
             ax2.add_collection(p)
+
+        plt.tight_layout()
         plt.show()
 
     def show_pcd_overlay(self, i):
