@@ -13,8 +13,8 @@ import matplotlib
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # NOQA
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d import Axes3D  # NOQA
 import numpy as np
 import PIL.Image
 import scipy.io
