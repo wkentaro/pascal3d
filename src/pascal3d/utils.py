@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import six
 
 
 def get_transformation_matrix(azimuth, elevation, distance):
@@ -124,3 +125,84 @@ def get_camera_polygon(height, width, theta, focal, principal, viewport):
     x = np.vstack((x0, x))
 
     return x
+
+
+def load_pcd(pcd_file):
+    """Load xyz pcd file.
+
+    Parameters
+    ----------
+    pcd_file: str
+        PCD filename.
+    """
+    points = []
+    n_points = None
+    with open(pcd_file, 'r') as f:
+        for line in f.readlines():
+            if line.startswith('#'):
+                continue
+
+            meta_fields = [
+                'VERSION',
+                'FIELDS',
+                'SIZE',
+                'TYPE',
+                'COUNT',
+                'WIDTH',
+                'HEIGHT',
+                'VIEWPOINT',
+                'POINTS',
+                'DATA',
+            ]
+            meta = line.strip().split(' ')
+            meta_header, meta_contents = meta[0], meta[1:]
+            if meta_header == 'FIELDS':
+                assert meta_contents == ['x', 'y', 'z']
+            elif meta_header == 'POINTS':
+                n_points = int(meta_contents[0])
+            if meta_header in meta_fields:
+                continue
+
+            x, y, z = map(float, line.split(' '))
+            points.append((x, y, z))
+
+    points = np.array(points)
+
+    if n_points is not None:
+        assert len(points) == n_points
+        assert points.shape[1] == 3
+
+    return points
+
+
+def label_colormap(n_labels):
+    """Returns appropriate colormap for the specified number of labels.
+
+    Parameters
+    ----------
+    n_labels: int
+        Number of labels.
+
+    Returns
+    -------
+    colormap: array of float, shape (n_labels, 3)
+        Colormap generated for the specified number of labels.
+    """
+
+    def bitget(byteval, idx):
+        return ((byteval & (1 << idx)) != 0)
+
+    colormap = np.zeros((n_labels, 3))
+    for i in six.moves.range(0, n_labels):
+        id = i
+        r, g, b = 0, 0, 0
+        for j in six.moves.range(0, 8):
+            r = np.bitwise_or(r, (bitget(id, 0) << 7-j))
+            g = np.bitwise_or(g, (bitget(id, 1) << 7-j))
+            b = np.bitwise_or(b, (bitget(id, 2) << 7-j))
+            id = (id >> 3)
+        colormap[i, 0] = r
+        colormap[i, 1] = g
+        colormap[i, 2] = b
+    colormap = colormap.astype(np.float32) / 255
+    return colormap
