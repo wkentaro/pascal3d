@@ -16,9 +16,11 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
+import PIL.Image
 import scipy.io
 import scipy.misc
 import shlex
+import skimage.color
 import subprocess
 
 import utils
@@ -30,6 +32,7 @@ class Pascal3DAnnotation(object):
         ann_data = scipy.io.loadmat(ann_file)
 
         self.img_filename = ann_data['record']['filename'][0][0][0]
+        self.segmented = ann_data['record']['segmented'][0][0][0]
 
         self.objects = []
         for obj in ann_data['record']['objects'][0][0][0]:
@@ -69,6 +72,30 @@ class Pascal3DAnnotation(object):
 
 
 class Pascal3DDataset(object):
+
+    voc2012_class_names = [
+        'background',
+        'aeroplane',
+        'bicycle',
+        'bird',
+        'boat',
+        'bottle',
+        'bus',
+        'car',
+        'cat',
+        'chair',
+        'cow',
+        'diningtable',
+        'dog',
+        'horse',
+        'motorbike',
+        'person',
+        'potted plant',
+        'sheep',
+        'sofa',
+        'train',
+        'tv/monitor',
+    ]
 
     class_names = [
         'background',
@@ -118,35 +145,77 @@ class Pascal3DDataset(object):
         img = None
         objects = []
         class_cads = {}
-        for cls in self.class_names[1:]:
+        label_cls = None
+        for class_name in self.class_names[1:]:
             ann_file = osp.join(
                 self.dataset_dir,
-                'Annotations/{}_pascal/{}.mat'.format(cls, data_id))
+                'Annotations/{}_pascal/{}.mat'.format(class_name, data_id))
             if not osp.exists(ann_file):
                 continue
             ann = Pascal3DAnnotation(ann_file)
 
-            if cls not in class_cads:
+            # we only use segmented data
+            if not ann.segmented:
+                return None
+
+            if label_cls is None:
+                label_cls_file = osp.join(
+                    self.dataset_dir,
+                    'PASCAL/VOCdevkit/VOC2012/SegmentationClass/{}.png'
+                    .format(data_id))
+                label_cls = PIL.Image.open(label_cls_file)
+                label_cls = np.array(label_cls)
+                label_cls[label_cls == 255] = 0  # set boundary as background
+                # convert label from voc2012 to pascal3D
+                for voc2012_id, cls in enumerate(self.voc2012_class_names):
+                    cls = cls.replace('/', '')
+                    if cls in self.class_names:
+                        pascal3d_id = self.class_names.index(cls)
+                        label_cls[label_cls == voc2012_id] = pascal3d_id
+                    else:
+                        # set background class id
+                        label_cls[label_cls == voc2012_id] = 0
+
+            if class_name not in class_cads:
                 cad_file = osp.join(
                     self.dataset_dir,
-                    'CAD/{}.mat'.format(cls))
-                cad = scipy.io.loadmat(cad_file)[cls][0]
-                class_cads[cls] = cad
+                    'CAD/{}.mat'.format(class_name))
+                cad = scipy.io.loadmat(cad_file)[class_name][0]
+                class_cads[class_name] = cad
 
             if img is None:
                 img_file = osp.join(
                     self.dataset_dir,
-                    'Images/{}_pascal'.format(cls),
+                    'Images/{}_pascal'.format(class_name),
                     ann.img_filename)
                 img = scipy.misc.imread(img_file)
 
             for obj in ann.objects:
-                objects.append((cls, obj))
+                objects.append((class_name, obj))
 
-        return img, objects, class_cads
+        return {
+            'img': img,
+            'objects': objects,
+            'class_cads': class_cads,
+            'label_cls': label_cls
+        }
 
-    def draw_annotation(self, i):
-        img, objects, _ = self._get_data(i)
+    def show_annotation(self, i):
+        data = self._get_data(i)
+        if data is None:
+            print('Skipping because of some lack of data.')
+            return
+        img = data['img']
+        objects = data['objects']
+        label_cls = data['label_cls']
+
+        ax1 = plt.subplot(121)
+        plt.axis('off')
+
+        ax2 = plt.subplot(122)
+        plt.axis('off')
+        label_viz = skimage.color.label2rgb(label_cls, bg_label=0)
+        ax2.imshow(label_viz)
 
         for cls, obj in objects:
             x1, y1, x2, y2 = obj['bbox']
@@ -161,14 +230,20 @@ class Pascal3DDataset(object):
                     continue
                 x, y = anchor['location'][0][0][0]
                 cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), -1)
-
-        return img
+        ax1.imshow(img)
+        plt.show()
 
     def show_cad(self, i, camframe=False):
         if camframe:
             return self.show_cad_camframe(i)
 
-        img, objects, class_cads = self._get_data(i)
+        data = self._get_data(i)
+        if data is None:
+            print('Skipping because of some lack of data.')
+            return
+        img = data['img']
+        objects = data['objects']
+        class_cads = data['class_cads']
 
         for cls, obj in objects:
             # show image
@@ -246,7 +321,13 @@ class Pascal3DDataset(object):
             plt.show()
 
     def show_cad_camframe(self, i):
-        img, objects, class_cads = self._get_data(i)
+        data = self._get_data(i)
+        if data is None:
+            print('Skipping because of some lack of data.')
+            return
+        img = data['img']
+        objects = data['objects']
+        class_cads = data['class_cads']
 
         ax1 = plt.subplot(1, 2, 1)
         ax1.imshow(img)
@@ -299,7 +380,13 @@ class Pascal3DDataset(object):
         plt.show()
 
     def show_cad_overlay(self, i):
-        img, objects, class_cads = self._get_data(i)
+        data = self._get_data(i)
+        if data is None:
+            print('Skipping because of some lack of data.')
+            return
+        img = data['img']
+        objects = data['objects']
+        class_cads = data['class_cads']
 
         ax1 = plt.subplot(121)
         plt.axis('off')
@@ -329,7 +416,12 @@ class Pascal3DDataset(object):
         plt.show()
 
     def show_pcd_overlay(self, i):
-        img, objects, class_cads = self._get_data(i)
+        data = self._get_data(i)
+        if data is None:
+            print('Skipping because of some lack of data.')
+            return
+        img = data['img']
+        objects = data['objects']
 
         ax1 = plt.subplot(121)
         plt.axis('off')
@@ -353,7 +445,6 @@ class Pascal3DDataset(object):
             for x, y in points_2d:
                 if x > width or x < 0 or y > height or y < 0:
                     continue
-                # img[y, x] = (img[y, x] * 0.8) + (colormap[cls_id] * 255 * 0.2)
                 img[y, x] = colormap[cls_id] * 255
             img = img.astype(np.uint8)
 
@@ -379,7 +470,7 @@ class Pascal3DDataset(object):
             if osp.exists(pcd_file):
                 if not dry_run:
                     print('PCD file exists, so skipping: {}'
-                            .format(pcd_file))
+                          .format(pcd_file))
                 continue
             # off file -> obj file
             cmd = 'meshlabserver -i {} -o {}'.format(off_file, obj_file)
@@ -404,7 +495,7 @@ class Pascal3DDataset(object):
             if osp.exists(pcd_file):
                 if not dry_run:
                     print('PCD file exists, so skipping: {}'
-                            .format(pcd_file))
+                          .format(pcd_file))
                 continue
             # ply file -> pcd file
             cmd = 'pcl_mesh_sampling {} {} -no_vis_result'.format(
