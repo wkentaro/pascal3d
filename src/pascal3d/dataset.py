@@ -457,6 +457,55 @@ class Pascal3DDataset(object):
         plt.tight_layout()
         plt.show()
 
+    def show_depth(self, i):
+        data = self._get_data(i)
+        if data is None:
+            print('Skipping because of some lack of data.')
+            return
+        img = data['img']
+        objects = data['objects']
+
+        ax1 = plt.subplot(121)
+        plt.axis('off')
+        ax1.imshow(img)
+
+        ax2 = plt.subplot(122)
+        plt.axis('off')
+
+        height, width = img.shape[:2]
+        depth = np.zeros((height, width), dtype=np.float64)
+        depth[...] = np.nan
+        for cls, obj in objects:
+            cls_id = self.class_names.index(cls)
+            cad_index = obj['cad_index']
+            pcd_file = osp.join(self.dataset_dir, 'CAD', cls,
+                                '{:02}.pcd'.format(cad_index + 1))
+            points_3d = utils.load_pcd(pcd_file)
+            points_3d_camframe = utils.transform_to_camera_frame(
+                points_3d,
+                obj['viewpoint']['azimuth'],
+                obj['viewpoint']['elevation'],
+                obj['viewpoint']['distance'],
+            )
+            points_2d = utils.project_vertices_3d_to_2d(
+                points_3d, **obj['viewpoint'])
+            depth_map = {}
+            for (x, y), (_, _, z) in zip(points_2d, points_3d_camframe):
+                x, y = int(x), int(y)
+                if x >= width or x < 0 or y >= height or y < 0:
+                    continue
+                d = depth_map.get((x, y))
+                if d is None:
+                    depth_map[(x, y)] = abs(z)
+                else:
+                    depth_map[(x, y)] = min(d, abs(z))
+            for (x, y), d in depth_map.items():
+                depth[y, x] = d
+
+        ax2.imshow(depth)
+        plt.tight_layout()
+        plt.show()
+
     def convert_mesh_to_pcd(self, dry_run=False):
         # scrape off files
         off_files = []
