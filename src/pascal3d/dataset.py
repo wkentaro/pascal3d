@@ -424,7 +424,9 @@ class Pascal3DDataset(object):
         plt.axis('off')
 
         n_classes = len(self.class_names)
-        colormap = utils.label_colormap(n_classes)
+        colormap = plt.cm.Spectral(
+            np.linspace(0, 1, n_classes-1))[:, :3]   # w/o background color
+        colormap = np.vstack(([0, 0, 0], colormap))  # w/ background color
         for cls, obj in objects:
             cls_id = self.class_names.index(cls)
             cad_index = obj['cad_index']
