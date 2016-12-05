@@ -38,6 +38,8 @@ class Pascal3DAnnotation(object):
         for obj in ann_data['record']['objects'][0][0][0]:
             if not obj['viewpoint']:
                 continue
+            elif 'distance' not in obj['viewpoint'].dtype.names:
+                continue
             elif obj['viewpoint']['distance'][0][0][0][0] == 0:
                 continue
 
@@ -118,13 +120,18 @@ class Pascal3DDataset(object):
         self.dataset_dir = chainer.dataset.get_dataset_directory(
             'pascal3d/PASCAL3D+_release1.1')
         # get all data ids
+        print('Generating index for annotations...')
         data_ids = []
         for cls in self.class_names[1:]:
             cls_ann_dir = osp.join(
                 self.dataset_dir, 'Annotations/{}_pascal'.format(cls))
             for ann_file in os.listdir(cls_ann_dir):
+                ann = Pascal3DAnnotation(osp.join(cls_ann_dir, ann_file))
+                if not ann.segmented:
+                    continue
                 data_id = osp.splitext(ann_file)[0]
                 data_ids.append(data_id)
+        print('Done.')
         data_ids = list(set(data_ids))
         # split data to train and val
         val_size_ratio = 0.25
@@ -153,10 +160,6 @@ class Pascal3DDataset(object):
             if not osp.exists(ann_file):
                 continue
             ann = Pascal3DAnnotation(ann_file)
-
-            # we only use segmented data
-            if not ann.segmented:
-                return None
 
             if label_cls is None:
                 label_cls_file = osp.join(
@@ -202,9 +205,6 @@ class Pascal3DDataset(object):
 
     def show_annotation(self, i):
         data = self._get_data(i)
-        if data is None:
-            print('Skipping because of some lack of data.')
-            return
         img = data['img']
         objects = data['objects']
         label_cls = data['label_cls']
@@ -240,9 +240,6 @@ class Pascal3DDataset(object):
             return self.show_cad_camframe(i)
 
         data = self._get_data(i)
-        if data is None:
-            print('Skipping because of some lack of data.')
-            return
         img = data['img']
         objects = data['objects']
         class_cads = data['class_cads']
@@ -324,9 +321,6 @@ class Pascal3DDataset(object):
 
     def show_cad_camframe(self, i):
         data = self._get_data(i)
-        if data is None:
-            print('Skipping because of some lack of data.')
-            return
         img = data['img']
         objects = data['objects']
         class_cads = data['class_cads']
@@ -384,9 +378,6 @@ class Pascal3DDataset(object):
 
     def show_cad_overlay(self, i):
         data = self._get_data(i)
-        if data is None:
-            print('Skipping because of some lack of data.')
-            return
         img = data['img']
         objects = data['objects']
         class_cads = data['class_cads']
@@ -422,9 +413,6 @@ class Pascal3DDataset(object):
 
     def show_pcd_overlay(self, i):
         data = self._get_data(i)
-        if data is None:
-            print('Skipping because of some lack of data.')
-            return
         img = data['img']
         objects = data['objects']
 
@@ -459,9 +447,6 @@ class Pascal3DDataset(object):
 
     def show_depth(self, i):
         data = self._get_data(i)
-        if data is None:
-            print('Skipping because of some lack of data.')
-            return
         img = data['img']
         objects = data['objects']
 
