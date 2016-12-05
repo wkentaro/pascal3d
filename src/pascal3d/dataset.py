@@ -149,10 +149,13 @@ class Pascal3DDataset(object):
     def _get_data(self, i):
         data_id = self.data_ids[i]
 
-        img = None
-        objects = []
-        class_cads = {}
-        label_cls = None
+        data = {
+            'img': None,
+            'objects': [],
+            'class_cads': {},
+            'label_cls': None,
+        }
+
         for class_name in self.class_names[1:]:
             ann_file = osp.join(
                 self.dataset_dir,
@@ -161,7 +164,7 @@ class Pascal3DDataset(object):
                 continue
             ann = Pascal3DAnnotation(ann_file)
 
-            if label_cls is None:
+            if data['label_cls'] is None:
                 label_cls_file = osp.join(
                     self.dataset_dir,
                     'PASCAL/VOCdevkit/VOC2012/SegmentationClass/{}.png'
@@ -178,30 +181,29 @@ class Pascal3DDataset(object):
                     else:
                         # set background class id
                         label_cls[label_cls == voc2012_id] = 0
+                data['label_cls'] = label_cls
 
-            if class_name not in class_cads:
+            if class_name not in data['class_cads']:
                 cad_file = osp.join(
                     self.dataset_dir,
                     'CAD/{}.mat'.format(class_name))
                 cad = scipy.io.loadmat(cad_file)[class_name][0]
-                class_cads[class_name] = cad
+                data['class_cads'][class_name] = cad
 
-            if img is None:
+            if data['img'] is None:
                 img_file = osp.join(
                     self.dataset_dir,
                     'Images/{}_pascal'.format(class_name),
                     ann.img_filename)
-                img = scipy.misc.imread(img_file)
+                data['img'] = scipy.misc.imread(img_file)
 
             for obj in ann.objects:
-                objects.append((class_name, obj))
+                obj['cad_basename'] = osp.join(
+                    self.dataset_dir,
+                    'CAD/{}/{:02}'.format(class_name, obj['cad_index'] + 1))
+                data['objects'].append((class_name, obj))
 
-        return {
-            'img': img,
-            'objects': objects,
-            'class_cads': class_cads,
-            'label_cls': label_cls
-        }
+        return data
 
     def show_annotation(self, i):
         data = self._get_data(i)
@@ -429,9 +431,7 @@ class Pascal3DDataset(object):
         colormap = np.vstack(([0, 0, 0], colormap))  # w/ background color
         for cls, obj in objects:
             cls_id = self.class_names.index(cls)
-            cad_index = obj['cad_index']
-            pcd_file = osp.join(self.dataset_dir, 'CAD', cls,
-                                '{:02}.pcd'.format(cad_index + 1))
+            pcd_file = obj['cad_basename'] + '.pcd'
             points_3d = utils.load_pcd(pcd_file)
             points_2d = utils.project_vertices_3d_to_2d(
                 points_3d, **obj['viewpoint'])
@@ -462,9 +462,7 @@ class Pascal3DDataset(object):
         max_depth = depth.copy()
         for cls, obj in objects:
             cls_id = self.class_names.index(cls)
-            cad_index = obj['cad_index']
-            pcd_file = osp.join(self.dataset_dir, 'CAD', cls,
-                                '{:02}.pcd'.format(cad_index + 1))
+            pcd_file = obj['cad_basename'] + '.pcd'
             points_3d = utils.load_pcd(pcd_file)
             points_3d_camframe = utils.transform_to_camera_frame(
                 points_3d,
