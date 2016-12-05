@@ -146,7 +146,7 @@ class Pascal3DDataset(object):
     def __len__(self):
         return len(self.data_ids)
 
-    def _get_data(self, i):
+    def get_data(self, i):
         data_id = self.data_ids[i]
 
         data = {
@@ -206,7 +206,7 @@ class Pascal3DDataset(object):
         return data
 
     def show_annotation(self, i):
-        data = self._get_data(i)
+        data = self.get_data(i)
         img = data['img']
         objects = data['objects']
         label_cls = data['label_cls']
@@ -241,7 +241,7 @@ class Pascal3DDataset(object):
         if camframe:
             return self.show_cad_camframe(i)
 
-        data = self._get_data(i)
+        data = self.get_data(i)
         img = data['img']
         objects = data['objects']
         class_cads = data['class_cads']
@@ -322,7 +322,7 @@ class Pascal3DDataset(object):
             plt.show()
 
     def show_cad_camframe(self, i):
-        data = self._get_data(i)
+        data = self.get_data(i)
         img = data['img']
         objects = data['objects']
         class_cads = data['class_cads']
@@ -379,7 +379,7 @@ class Pascal3DDataset(object):
         plt.show()
 
     def show_cad_overlay(self, i):
-        data = self._get_data(i)
+        data = self.get_data(i)
         img = data['img']
         objects = data['objects']
         class_cads = data['class_cads']
@@ -414,7 +414,7 @@ class Pascal3DDataset(object):
         plt.show()
 
     def show_pcd_overlay(self, i):
-        data = self._get_data(i)
+        data = self.get_data(i)
         img = data['img']
         objects = data['objects']
 
@@ -448,7 +448,7 @@ class Pascal3DDataset(object):
         plt.show()
 
     def show_depth(self, i):
-        data = self._get_data(i)
+        data = self.get_data(i)
         img = data['img']
         objects = data['objects']
 
