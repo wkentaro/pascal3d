@@ -175,6 +175,14 @@ def load_pcd(pcd_file):
     return points
 
 
+def plane_points3(p0, p1, p2):
+    v0 = p1 - p0
+    v1 = p2 - p0
+    p_no = np.cross(v0, v1)
+    p_co = p0
+    return p_co, p_no
+
+
 def intersection_line_with_plane(p0, p1, p_co, p_no, epsilon=1e-6):
     """Compute intersection point between line and plane.
 
@@ -204,7 +212,7 @@ def intersection_line_with_plane(p0, p1, p_co, p_no, epsilon=1e-6):
     w = p0 - p_co
     fac = - vectors_dot(p_no, w) / dot
     u = u * fac
-    inter = p0 + u
-    inter[mask] = np.nan
+    p_isect = p0 + u
+    p_isect[mask] = np.nan
 
-    return inter
+    return p_isect
