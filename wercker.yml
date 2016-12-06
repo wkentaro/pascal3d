@@ -1,0 +1,30 @@
+box: python:2.7
+
+build:
+  steps:
+    - virtualenv:
+        name: setup virtual environment
+        install_wheel: false
+
+    - pip-install
+
+    - script:
+        name: install for development
+        code: |
+          pip install flake8 hacking
+
+    - script:
+        name: echo python information
+        code: |
+          echo "python version $(python --version) running"
+          echo "pip version $(pip --version) running"
+
+    - script:
+        name: test code format
+        code: |
+          flake8
+
+    - script:
+        name: nose test
+        code: |
+          nosetests tests/pascal3d_tests

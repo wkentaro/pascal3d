@@ -23,7 +23,7 @@ import shlex
 import skimage.color
 import subprocess
 
-import utils
+from pascal3d import utils
 
 
 class Pascal3DAnnotation(object):

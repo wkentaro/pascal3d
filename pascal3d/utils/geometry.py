@@ -1,7 +1,11 @@
 import math
 
 import numpy as np
-import six
+
+from pascal3d.utils import _geometry
+
+
+intersect3d_ray_triangle = _geometry.intersect3d_ray_triangle
 
 
 def get_transformation_matrix(azimuth, elevation, distance):
@@ -115,7 +119,6 @@ def project_points_2d_to_3d(x2d, theta, focal, principal, viewport):
     return x2d
 
 
-
 def get_camera_polygon(height, width, theta, focal, principal, viewport):
     x0 = np.array([0, 0, 0], dtype=np.float64)
 
@@ -131,94 +134,3 @@ def get_camera_polygon(height, width, theta, focal, principal, viewport):
     x = np.vstack((x0, x))
 
     return x
-
-
-def load_pcd(pcd_file):
-    """Load xyz pcd file.
-
-    Parameters
-    ----------
-    pcd_file: str
-        PCD filename.
-    """
-    points = []
-    n_points = None
-    with open(pcd_file, 'r') as f:
-        for line in f.readlines():
-            if line.startswith('#'):
-                continue
-
-            meta_fields = [
-                'VERSION',
-                'FIELDS',
-                'SIZE',
-                'TYPE',
-                'COUNT',
-                'WIDTH',
-                'HEIGHT',
-                'VIEWPOINT',
-                'POINTS',
-                'DATA',
-            ]
-            meta = line.strip().split(' ')
-            meta_header, meta_contents = meta[0], meta[1:]
-            if meta_header == 'FIELDS':
-                assert meta_contents == ['x', 'y', 'z']
-            elif meta_header == 'POINTS':
-                n_points = int(meta_contents[0])
-            if meta_header in meta_fields:
-                continue
-
-            x, y, z = map(float, line.split(' '))
-            points.append((x, y, z))
-
-    points = np.array(points)
-
-    if n_points is not None:
-        assert len(points) == n_points
-        assert points.shape[1] == 3
-
-    return points
-
-
-def plane_points3(p0, p1, p2):
-    v0 = p1 - p0
-    v1 = p2 - p0
-    p_no = np.cross(v0, v1)
-    p_co = p0
-    return p_co, p_no
-
-
-def intersection_line_with_plane(p0, p1, p_co, p_no, epsilon=1e-6):
-    """Compute intersection point between line and plane.
-
-    Parameters
-    ----------
-    p0, p1: Define the line.
-    p_co, p_no: Define the plane.
-        p_co is a point on the plane (plane coordinate).
-        p_no is a normal vector defining the plane direction;
-             (does not need to be normalized).
-    """
-    assert p0.ndim == p1.ndim == p_co.ndim == p_no.ndim == 2
-    assert p0.shape[1] == 3
-    assert p1.shape[1] == 3
-    assert p_co.shape[1] == 3
-    assert p_no.shape[1] == 3
-    assert len(p0) == len(p1) == len(p_co) == len(p_no)
-
-    def vectors_dot(a, b):
-        return a[:, 0] * b[:, 0] + a[:, 1] * b[:, 1] + a[:, 2] * b[:, 2]
-
-    u = p1 - p0
-    dot = vectors_dot(p_no, u)
-
-    mask = np.abs(dot) < epsilon
-
-    w = p0 - p_co
-    fac = - vectors_dot(p_no, w) / dot
-    u = u * fac
-    p_isect = p0 + u
-    p_isect[mask] = np.nan
-
-    return p_isect

@@ -1,1 +1,7 @@
 *.py[cdo]
+
+build/
+*.egg-info
+
+*.c
+*.so
