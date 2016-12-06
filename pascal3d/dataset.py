@@ -3,12 +3,14 @@
 from __future__ import division
 from __future__ import print_function
 
+import math
 import os
 import os.path as osp
+import shlex
+import subprocess
 
 import chainer
 import cv2
-import math
 import matplotlib
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
@@ -19,9 +21,8 @@ import numpy as np
 import PIL.Image
 import scipy.io
 import scipy.misc
-import shlex
 import skimage.color
-import subprocess
+import sklearn.model_selection
 
 from pascal3d import utils
 
@@ -134,14 +135,12 @@ class Pascal3DDataset(object):
         print('Done.')
         data_ids = list(set(data_ids))
         # split data to train and val
-        val_size_ratio = 0.25
+        ids_train, ids_val = sklearn.model_selection.train_test_split(
+            data_ids, test_size=0.25, random_state=1234)
         if data_type == 'train':
-            data_size = int(len(data_ids) * (1 - val_size_ratio))
+            self.data_ids = ids_train
         else:
-            data_size = int(len(data_ids) * val_size_ratio)
-        np.random.seed(1234)
-        p = np.random.randint(0, len(data_ids), data_size)
-        self.data_ids = np.array(data_ids)[p]
+            self.data_ids = ids_val
 
     def __len__(self):
         return len(self.data_ids)
