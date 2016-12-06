@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
+import distutils.extension
 from setuptools import find_packages
 from setuptools import setup
 
-from Cython.Build import cythonize
-from distutils.extension import Extension
+from skimage._build import cython
 import numpy as np
 
 
 __version__ = '0.1'
 
+cython(['_geometry.pyx'], working_path='pascal3d/utils')
 ext_modules = [
-    Extension(
+    distutils.extension.Extension(
         'pascal3d.utils._geometry',
-        ['pascal3d/utils/_geometry.pyx'],
-        include_dirs=[np.get_include()]
+        sources=['pascal3d/utils/_geometry.c'],
+        include_dirs=[np.get_include()],
     ),
 ]
 
@@ -27,5 +28,5 @@ setup(
     license='MIT',
     install_requires=open('requirements.txt').readlines(),
     tests_require=['nose'],
-    ext_modules=cythonize(ext_modules),
+    ext_modules=ext_modules,
 )
