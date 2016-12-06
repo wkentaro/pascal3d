@@ -57,7 +57,7 @@ def transform_to_camera_frame(
     return x3d_camframe
 
 
-def project_vertices_3d_to_2d(
+def project_points_3d_to_2d(
         x3d,
         azimuth,
         elevation,

@@ -399,7 +399,7 @@ class Pascal3DDataset(object):
             vertices_3d = cad['vertices']
             faces = cad['faces']
 
-            vertices_2d = utils.project_vertices_3d_to_2d(
+            vertices_2d = utils.project_points_3d_to_2d(
                 vertices_3d, **obj['viewpoint'])
 
             patches = []
@@ -433,7 +433,7 @@ class Pascal3DDataset(object):
             cls_id = self.class_names.index(cls)
             pcd_file = obj['cad_basename'] + '.pcd'
             points_3d = utils.load_pcd(pcd_file)
-            points_2d = utils.project_vertices_3d_to_2d(
+            points_2d = utils.project_points_3d_to_2d(
                 points_3d, **obj['viewpoint'])
             img = img.astype(np.float64)
             height, width = img.shape[:2]
@@ -470,7 +470,7 @@ class Pascal3DDataset(object):
                 obj['viewpoint']['elevation'],
                 obj['viewpoint']['distance'],
             )
-            points_2d = utils.project_vertices_3d_to_2d(
+            points_2d = utils.project_points_3d_to_2d(
                 points_3d, **obj['viewpoint'])
             for (x, y), (_, _, z) in zip(points_2d, points_3d_camframe):
                 x, y = int(x), int(y)
