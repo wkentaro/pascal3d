@@ -95,7 +95,7 @@ def project_vertices_3d_to_2d(
     return x2d
 
 
-def get_camera_polygon(height, width, theta, focal, principal, viewport):
+def project_points_2d_to_3d(x2d, theta, focal, principal, viewport):
     # rotate the camera model
     R2d = np.array([[math.cos(theta), -math.sin(theta)],
                     [math.sin(theta), math.cos(theta)]])
@@ -106,21 +106,26 @@ def get_camera_polygon(height, width, theta, focal, principal, viewport):
         [0, M * focal, 0],
         [0, 0, -1],
     ])
+    x2d -= principal
+    x2d[:, 1] *= -1
+    x2d = np.dot(np.linalg.inv(R2d), x2d.T).T
+    x2d = np.hstack((x2d, np.ones((len(x2d), 1), dtype=np.float64)))
+    x2d = np.dot(np.linalg.inv(P), x2d.T).T
+    return x2d
 
+
+
+def get_camera_polygon(height, width, theta, focal, principal, viewport):
     x0 = np.array([0, 0, 0], dtype=np.float64)
 
-    # rotate and project the points
+    # project the 3D points
     x = np.array([
         [0, 0],
         [width, 0],
         [width, height],
         [0, height],
     ], dtype=np.float64)
-    x -= principal
-    x[:, 1] *= -1
-    x = np.dot(np.linalg.inv(R2d), x.T).T
-    x = np.hstack((x, np.ones((len(x), 1), dtype=np.float64)))
-    x = np.dot(np.linalg.inv(P), x.T).T
+    x = project_points_2d_to_3d(x, theta, focal, principal, viewport)
 
     x = np.vstack((x0, x))
 
