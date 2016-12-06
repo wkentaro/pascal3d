@@ -1,8 +1,3 @@
-import math
-
-import numpy as np
-import six
-
 from pascal3d.utils import geometry
 from pascal3d.utils import io
 

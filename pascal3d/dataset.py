@@ -461,7 +461,6 @@ class Pascal3DDataset(object):
         depth[...] = np.nan
         max_depth = depth.copy()
         for cls, obj in objects:
-            cls_id = self.class_names.index(cls)
             pcd_file = obj['cad_basename'] + '.pcd'
             points_3d = utils.load_pcd(pcd_file)
             points_3d_camframe = utils.transform_to_camera_frame(

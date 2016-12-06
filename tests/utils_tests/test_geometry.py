@@ -1,7 +1,5 @@
 import nose
 import numpy as np
-import sympy as sp
-import nose.tools
 
 
 def test_intersect3d_ray_triangle():
