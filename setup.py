@@ -4,8 +4,8 @@ import distutils.extension
 from setuptools import find_packages
 from setuptools import setup
 
-from skimage._build import cython
 import numpy as np
+from skimage._build import cython
 
 
 __version__ = '0.1'

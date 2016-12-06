@@ -6,7 +6,8 @@ from pascal3d.utils import _geometry
 
 
 intersect3d_ray_triangle = _geometry.intersect3d_ray_triangle
-raytrace_camera_frame_on_triangles = _geometry.raytrace_camera_frame_on_triangles
+raytrace_camera_frame_on_triangles = \
+    _geometry.raytrace_camera_frame_on_triangles
 
 
 def get_transformation_matrix(azimuth, elevation, distance):
