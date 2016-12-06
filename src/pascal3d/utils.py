@@ -173,3 +173,38 @@ def load_pcd(pcd_file):
         assert points.shape[1] == 3
 
     return points
+
+
+def intersection_line_with_plane(p0, p1, p_co, p_no, epsilon=1e-6):
+    """Compute intersection point between line and plane.
+
+    Parameters
+    ----------
+    p0, p1: Define the line.
+    p_co, p_no: Define the plane.
+        p_co is a point on the plane (plane coordinate).
+        p_no is a normal vector defining the plane direction;
+             (does not need to be normalized).
+    """
+    assert p0.ndim == p1.ndim == p_co.ndim == p_no.ndim == 2
+    assert p0.shape[1] == 3
+    assert p1.shape[1] == 3
+    assert p_co.shape[1] == 3
+    assert p_no.shape[1] == 3
+    assert len(p0) == len(p1) == len(p_co) == len(p_no)
+
+    def vectors_dot(a, b):
+        return a[:, 0] * b[:, 0] + a[:, 1] * b[:, 1] + a[:, 2] * b[:, 2]
+
+    u = p1 - p0
+    dot = vectors_dot(p_no, u)
+
+    mask = np.abs(dot) < epsilon
+
+    w = p0 - p_co
+    fac = - vectors_dot(p_no, w) / dot
+    u = u * fac
+    inter = p0 + u
+    inter[mask] = np.nan
+
+    return inter
