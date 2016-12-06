@@ -96,6 +96,7 @@ def project_vertices_3d_to_2d(
 
 
 def project_points_2d_to_3d(x2d, theta, focal, principal, viewport):
+    x2d = x2d.copy()
     # rotate the camera model
     R2d = np.array([[math.cos(theta), -math.sin(theta)],
                     [math.sin(theta), math.cos(theta)]])
