@@ -78,3 +78,36 @@ def intersect3d_ray_triangle(
     intersection[flags == 1] = I[flags == 1]
 
     return flags, intersection
+
+
+def raytrace_camera_frame_on_triangles(
+        np.ndarray[DTYPE_t, ndim=1] pt_camera_origin,
+        np.ndarray[DTYPE_t, ndim=2] pts_camera_frame,
+        np.ndarray[DTYPE_t, ndim=2] pts_tri0,
+        np.ndarray[DTYPE_t, ndim=2] pts_tri1,
+        np.ndarray[DTYPE_t, ndim=2] pts_tri2,
+        ):
+    """Raytrace with camera model and triangles.
+
+    Parameters
+    ----------
+    .. TODO(wkentaro)
+
+    Returns
+    -------
+    .. TODO(wkentaro)
+    """
+    cdef unsigned int n_points = len(pts_camera_frame)
+    cdef unsigned int n_triangles = len(pts_tri0)
+    cdef np.ndarray[DTYPE_t, ndim=1] pt_camera_frame
+    cdef np.ndarray[DTYPE_t, ndim=2] intersects
+    cdef np.ndarray[DTYPE_t, ndim=2] depth = np.zeros((n_points,), dtype=DTYPE)
+    for i_pt in range(n_points):
+        pt_camera_frame = pts_camera_frame[i_pt]
+        ray0 = np.repeat(pt_camera_origin[np.newaxis, :], n_triangles, axis=0)
+        ray1 = np.repeat(pt_camera_frame[np.newaxis, :], n_triangles, axis=0)
+        flags, intersects = intersect3d_ray_triangle(
+            ray0, ray1, pts_tri0, pts_tri1, pts_tri2)
+        d = np.abs(intersects[flags == 1]).min()
+        depth[i_pt] = d
+    return depth
