@@ -114,6 +114,7 @@ def raytrace_camera_frame_on_triangles(
         if intersects.size == 0:
             d = np.nan
         else:
-            d = np.abs(intersects).min()
+            assert (intersects[:, 2] > 0).sum() == 0
+            d = np.abs(intersects[:, 2]).min()
         depth[i_pt] = d
     return depth
