@@ -21,7 +21,10 @@ def intersect3d_ray_triangle(
 
     Returns
     -------
-    .. TODO(wkentaro)
+    flags: :class:`numpy.ndarray` (N,)
+        -1, 0, 1 or 2. 1 represents intersection.
+    intersection: :class:`numpy.ndarray` (N, 3)
+        Each intersection has (x, y, z) and np.nan as invalid value.
     """
     N = ray0.shape[0]
 
@@ -91,11 +94,17 @@ def raytrace_camera_frame_on_triangles(
 
     Parameters
     ----------
-    .. TODO(wkentaro)
+    pts_camera_origin: :class:`numpy.ndarray` (3, )
+        (x, y, z)
+    pts_camera_frame: :class:`numpy.ndarray` (n_rays, 3)
+        Each ray has (x, y, z) field.
+    pts_tri0, pts_tri1, pts_tri2: :class:`numpy.ndarray` (n_triangles, 3)
+        Points which define the triangle.
 
     Returns
     -------
-    .. TODO(wkentaro)
+    depth: :class:`numpy.ndarray` (n_rays,)
+        Depth value at each lay.
     """
     cdef unsigned int n_points = len(pts_camera_frame)
     cdef unsigned int n_triangles = len(pts_tri0)
@@ -104,7 +113,6 @@ def raytrace_camera_frame_on_triangles(
     cdef np.ndarray[DTYPE_t, ndim=1] depth = np.zeros((n_points,), dtype=DTYPE)
     cdef DTYPE_t d
     for i_pt in range(n_points):
-        print(100.0 * i_pt / n_points)
         pt_camera_frame = pts_camera_frame[i_pt]
         ray0 = np.repeat(pt_camera_origin[np.newaxis, :], n_triangles, axis=0)
         ray1 = np.repeat(pt_camera_frame[np.newaxis, :], n_triangles, axis=0)
