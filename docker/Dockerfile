@@ -8,4 +8,4 @@ RUN set -x && \
     wget \
     python python-virtualenv \
     liblapack-dev \
-    libopencv-dev
+    libopencv-dev python-opencv
