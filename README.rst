@@ -18,4 +18,4 @@ Install
 Usage
 -----
 
-You can use python scripts under `scripts` directory.
+You can use python scripts under ``scripts`` directory.
