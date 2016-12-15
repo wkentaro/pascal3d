@@ -1,0 +1,28 @@
+box: minervatech/vision.lib
+
+build:
+  steps:
+    - script:
+        name: install requirements
+        code: |
+          sudo pip install -q -U pip setuptools
+          for req in $(cat requirements.txt); do
+            sudo pip install -q $req
+          done
+
+    - script:
+        name: install this package
+        code: |
+          sudo python setup.py install
+
+    - script:
+        name: test code format
+        code: |
+          sudo pip install -q flake8 hacking
+          flake8
+
+    - script:
+        name: nose test
+        code: |
+          cd tests
+          nosetests .

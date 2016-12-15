@@ -3,12 +3,14 @@
 from __future__ import division
 from __future__ import print_function
 
+import math
 import os
 import os.path as osp
+import shlex
+import subprocess
 
 import chainer
 import cv2
-import math
 import matplotlib
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
@@ -19,11 +21,10 @@ import numpy as np
 import PIL.Image
 import scipy.io
 import scipy.misc
-import shlex
 import skimage.color
-import subprocess
+import sklearn.model_selection
 
-import utils
+from pascal3d import utils
 
 
 class Pascal3DAnnotation(object):
@@ -134,14 +135,12 @@ class Pascal3DDataset(object):
         print('Done.')
         data_ids = list(set(data_ids))
         # split data to train and val
-        val_size_ratio = 0.25
+        ids_train, ids_val = sklearn.model_selection.train_test_split(
+            data_ids, test_size=0.25, random_state=1234)
         if data_type == 'train':
-            data_size = int(len(data_ids) * (1 - val_size_ratio))
+            self.data_ids = ids_train
         else:
-            data_size = int(len(data_ids) * val_size_ratio)
-        np.random.seed(1234)
-        p = np.random.randint(0, len(data_ids), data_size)
-        self.data_ids = np.array(data_ids)[p]
+            self.data_ids = ids_val
 
     def __len__(self):
         return len(self.data_ids)
@@ -399,7 +398,7 @@ class Pascal3DDataset(object):
             vertices_3d = cad['vertices']
             faces = cad['faces']
 
-            vertices_2d = utils.project_vertices_3d_to_2d(
+            vertices_2d = utils.project_points_3d_to_2d(
                 vertices_3d, **obj['viewpoint'])
 
             patches = []
@@ -433,7 +432,7 @@ class Pascal3DDataset(object):
             cls_id = self.class_names.index(cls)
             pcd_file = obj['cad_basename'] + '.pcd'
             points_3d = utils.load_pcd(pcd_file)
-            points_2d = utils.project_vertices_3d_to_2d(
+            points_2d = utils.project_points_3d_to_2d(
                 points_3d, **obj['viewpoint'])
             img = img.astype(np.float64)
             height, width = img.shape[:2]
@@ -461,7 +460,6 @@ class Pascal3DDataset(object):
         depth[...] = np.nan
         max_depth = depth.copy()
         for cls, obj in objects:
-            cls_id = self.class_names.index(cls)
             pcd_file = obj['cad_basename'] + '.pcd'
             points_3d = utils.load_pcd(pcd_file)
             points_3d_camframe = utils.transform_to_camera_frame(
@@ -470,7 +468,7 @@ class Pascal3DDataset(object):
                 obj['viewpoint']['elevation'],
                 obj['viewpoint']['distance'],
             )
-            points_2d = utils.project_vertices_3d_to_2d(
+            points_2d = utils.project_points_3d_to_2d(
                 points_3d, **obj['viewpoint'])
             for (x, y), (_, _, z) in zip(points_2d, points_3d_camframe):
                 x, y = int(x), int(y)

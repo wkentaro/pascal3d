@@ -1,1 +1,8 @@
 *.py[cdo]
+
+build/
+*.egg-info
+
+*.c
+*.so
+*.pyx.md5

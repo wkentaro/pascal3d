@@ -1,7 +1,13 @@
 import math
 
 import numpy as np
-import six
+
+from pascal3d.utils import _geometry
+
+
+intersect3d_ray_triangle = _geometry.intersect3d_ray_triangle
+raytrace_camera_frame_on_triangles = \
+    _geometry.raytrace_camera_frame_on_triangles
 
 
 def get_transformation_matrix(azimuth, elevation, distance):
@@ -53,7 +59,7 @@ def transform_to_camera_frame(
     return x3d_camframe
 
 
-def project_vertices_3d_to_2d(
+def project_points_3d_to_2d(
         x3d,
         azimuth,
         elevation,
@@ -95,7 +101,8 @@ def project_vertices_3d_to_2d(
     return x2d
 
 
-def get_camera_polygon(height, width, theta, focal, principal, viewport):
+def project_points_2d_to_3d(x2d, theta, focal, principal, viewport):
+    x2d = x2d.copy()
     # rotate the camera model
     R2d = np.array([[math.cos(theta), -math.sin(theta)],
                     [math.sin(theta), math.cos(theta)]])
@@ -106,70 +113,26 @@ def get_camera_polygon(height, width, theta, focal, principal, viewport):
         [0, M * focal, 0],
         [0, 0, -1],
     ])
+    x2d -= principal
+    x2d[:, 1] *= -1
+    x2d = np.dot(np.linalg.inv(R2d), x2d.T).T
+    x2d = np.hstack((x2d, np.ones((len(x2d), 1), dtype=np.float64)))
+    x2d = np.dot(np.linalg.inv(P), x2d.T).T
+    return x2d
 
+
+def get_camera_polygon(height, width, theta, focal, principal, viewport):
     x0 = np.array([0, 0, 0], dtype=np.float64)
 
-    # rotate and project the points
+    # project the 3D points
     x = np.array([
         [0, 0],
         [width, 0],
         [width, height],
         [0, height],
     ], dtype=np.float64)
-    x -= principal
-    x[:, 1] *= -1
-    x = np.dot(np.linalg.inv(R2d), x.T).T
-    x = np.hstack((x, np.ones((len(x), 1), dtype=np.float64)))
-    x = np.dot(np.linalg.inv(P), x.T).T
+    x = project_points_2d_to_3d(x, theta, focal, principal, viewport)
 
     x = np.vstack((x0, x))
 
     return x
-
-
-def load_pcd(pcd_file):
-    """Load xyz pcd file.
-
-    Parameters
-    ----------
-    pcd_file: str
-        PCD filename.
-    """
-    points = []
-    n_points = None
-    with open(pcd_file, 'r') as f:
-        for line in f.readlines():
-            if line.startswith('#'):
-                continue
-
-            meta_fields = [
-                'VERSION',
-                'FIELDS',
-                'SIZE',
-                'TYPE',
-                'COUNT',
-                'WIDTH',
-                'HEIGHT',
-                'VIEWPOINT',
-                'POINTS',
-                'DATA',
-            ]
-            meta = line.strip().split(' ')
-            meta_header, meta_contents = meta[0], meta[1:]
-            if meta_header == 'FIELDS':
-                assert meta_contents == ['x', 'y', 'z']
-            elif meta_header == 'POINTS':
-                n_points = int(meta_contents[0])
-            if meta_header in meta_fields:
-                continue
-
-            x, y, z = map(float, line.split(' '))
-            points.append((x, y, z))
-
-    points = np.array(points)
-
-    if n_points is not None:
-        assert len(points) == n_points
-        assert points.shape[1] == 3
-
-    return points
