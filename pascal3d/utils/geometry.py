@@ -136,3 +136,69 @@ def get_camera_polygon(height, width, theta, focal, principal, viewport):
     x = np.vstack((x0, x))
 
     return x
+
+
+def triangle_to_aabb(tri0, tri1, tri2):
+    """Convert triangle to AABB.
+
+    Parameters
+    ----------
+    tri0, tri1, tri2: numpy.ndarray (N, 3)
+        Triangle vectors.
+
+    Returns
+    -------
+    lb, rt: numpy.ndarray (N, 3)
+        Min point (left-bottom: lb) and max point (right-top: rt) of
+        AABB (axis-aligned bounding box).
+    """
+    tri = np.array(zip(tri0, tri1, tri2))
+    lb = np.min(tri, axis=1)
+    rt = np.max(tri, axis=1)
+    return lb, rt
+
+
+def intersect3d_ray_aabb(ray0, ray1, lb, rt):
+    """Compute intersection between 3D ray and AABB.
+
+    Parameters
+    ----------
+    ray0: numpy.ndarray (3,)
+        3D point of ray's origin.
+    ray1: numpy.ndarray (3,)
+        3D point of ray's end.
+
+    Returns
+    -------
+    flag: bool
+        True if it intersects, else False.
+    intersection: numpy.ndarray (3,)
+        Point of intersection.
+    """
+    ray_dir = ray1 - ray0
+    ray_dir = ray_dir / np.linalg.norm(ray_dir)
+
+    dirfrac = 1.0 / ray_dir
+
+    t1 = (lb[0] - ray0[0]) * dirfrac[0]
+    t2 = (rt[0] - ray0[0]) * dirfrac[0]
+    t3 = (lb[1] - ray0[1]) * dirfrac[1]
+    t4 = (rt[1] - ray0[1]) * dirfrac[1]
+    t5 = (lb[2] - ray0[2]) * dirfrac[2]
+    t6 = (rt[2] - ray0[2]) * dirfrac[2]
+
+    tmin = max(max(min(t1, t2), min(t3, t4)), min(t5, t6))
+    tmax = min(min(max(t1, t2), max(t3, t4)), max(t5, t6))
+
+    if tmax < 0:
+        flag = False
+        t = tmax
+    elif tmin > tmax:
+        flag = False
+        t = tmax
+    else:
+        flag = True
+        t = tmin
+
+    intersection = ray0 + t * ray_dir
+    return flag, intersection
