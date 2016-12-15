@@ -6,6 +6,10 @@ RUN set -x && \
   sudo apt-get install -qq -y \
     git \
     wget \
-    python-dev \
+    python-dev python-setuptools \
     liblapack-dev \
     libopencv-dev python-opencv
+
+RUN set -x && \
+  sudo easy_install -U pip && \
+  sudo pip install -U pip setuptools
