@@ -4,4 +4,6 @@ matplotlib
 numpy
 scipy
 scikit-image
+scikit-learn
 Pillow
+requests
