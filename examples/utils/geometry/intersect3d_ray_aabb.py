@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import itertools
-import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,9 +36,6 @@ def main():
         [-1., 1., -2.],
         [-1., 1., -2.],
     ])
-
-    Ray0 = np.repeat([ray0], 3, axis=0)
-    Ray1 = np.repeat([ray1], 3, axis=0)
     Tri0 = np.repeat([tri0], 3, axis=0)
 
     ax = plt.figure().gca(projection='3d')
