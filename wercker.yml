@@ -1,13 +1,13 @@
-box: minervatech/vision.lib
+box: wkentaro/pascal3d
 
 build:
   steps:
     - script:
         name: install requirements
         code: |
-          sudo pip install -q -U pip setuptools
+          sudo pip install -U pip setuptools
           for req in $(cat requirements.txt); do
-            sudo pip install -q $req
+            sudo pip install $req
           done
 
     - script:
@@ -18,7 +18,7 @@ build:
     - script:
         name: test code format
         code: |
-          sudo pip install -q flake8 hacking
+          sudo pip install flake8 hacking
           flake8
 
     - script:
