@@ -6,7 +6,7 @@ RUN set -x && \
   sudo apt-get install -qq -y \
     git \
     wget \
-    python-dev python-setuptools \
+    python-dev python-setuptools python-tk \
     liblapack-dev \
     libopencv-dev python-opencv
 
