@@ -2,6 +2,7 @@
 
 import time
 
+import matplotlib
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,22 +73,45 @@ def main():
     print('raytracing...: rays: {}, triangles: {}'
           .format(len(pts_camera_frame), i+1))
     t_start = time.time()
-    depth = pascal3d.utils.raytrace_camera_frame_on_triangles(
+    min_depth, max_depth = pascal3d.utils.raytrace_camera_frame_on_triangles(
         pt_camera_origin, pts_camera_frame, pts_tri0, pts_tri1, pts_tri2)
     print('elapsed_time: {} [s]'.format(time.time() - t_start))
 
-    depth_img = np.zeros((height, width), dtype=np.float32)
-    depth_img[...] = np.nan
-    depth_img[mask == 1] = depth
+    min_depth[min_depth < 1e-6] = 0
+    max_depth[max_depth < 1e-6] = 0
+
+    depth = np.zeros((height, width), dtype=np.float32)
+    depth[mask == 1] = min_depth
+
+    backdepth = np.zeros((height, width), dtype=np.float32)
+    backdepth[mask == 1] = max_depth
 
     # visualize
-    depth_colorized = matplotlib.cm.jet(depth_img / depth_img.max())[:, :, :3]
-    depth_colorized[mask != 1] = [0, 0, 0]
-    depth_colorized = (depth_colorized * 255).astype(np.uint8)
-    plt.subplot(121)
+    plt.subplot(131)
     plt.imshow(img)
-    plt.subplot(122)
-    plt.imshow(depth_colorized)
+
+    max_imvalue = max_depth.max()
+    min_imvalue = min_depth[min_depth > 0].min()
+
+    # static scaling
+    depth = (depth - min_imvalue) / (max_imvalue - min_imvalue)
+    depth[depth > 1.0] = 1.0
+    depth[depth < 0.0] = 0.0
+    depth_viz = matplotlib.cm.jet(depth)[:, :, :3]
+    depth_viz = (depth_viz * 255).astype(np.uint8)
+    depth_viz[depth == 0] = [0, 0, 0]
+    plt.subplot(132)
+    plt.imshow(depth_viz)
+
+    backdepth = (backdepth - min_imvalue) / (max_imvalue - min_imvalue)
+    backdepth[backdepth > 1.0] = 1.0
+    backdepth[backdepth < 0.0] = 0.0
+    backdepth_viz = matplotlib.cm.jet(backdepth)[:, :, :3]
+    backdepth_viz = (backdepth_viz * 255).astype(np.uint8)
+    backdepth_viz[depth == 0] = [0, 0, 0]
+    plt.subplot(133)
+    plt.imshow(backdepth_viz)
+
     plt.show()
 
 

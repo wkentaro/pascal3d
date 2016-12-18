@@ -103,15 +103,17 @@ def raytrace_camera_frame_on_triangles(
 
     Returns
     -------
-    depth: :class:`numpy.ndarray` (n_rays,)
-        Depth value at each lay.
+    min_depth, max_depth: numpy.ndarray (n_rays,)
+        Min/max, Depth value at each lay.
     """
     cdef unsigned int n_points = len(pts_camera_frame)
     cdef unsigned int n_triangles = len(pts_tri0)
     cdef np.ndarray[DTYPE_t, ndim=1] pt_camera_frame
     cdef np.ndarray[DTYPE_t, ndim=2] intersects
-    cdef np.ndarray[DTYPE_t, ndim=1] depth = np.zeros((n_points,), dtype=DTYPE)
-    cdef DTYPE_t d
+    cdef np.ndarray[DTYPE_t, ndim=1] intersects_z
+    cdef np.ndarray[DTYPE_t, ndim=1] min_depth = np.zeros((n_points,), dtype=DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim=1] max_depth = np.zeros((n_points,), dtype=DTYPE)
+    cdef DTYPE_t min_d, max_d
     for i_pt in range(n_points):
         pt_camera_frame = pts_camera_frame[i_pt]
         ray0 = np.repeat(pt_camera_origin[np.newaxis, :], n_triangles, axis=0)
@@ -120,9 +122,12 @@ def raytrace_camera_frame_on_triangles(
             ray0, ray1, pts_tri0, pts_tri1, pts_tri2)
         intersects = intersects[flags == 1]
         if intersects.size == 0:
-            d = np.nan
+            min_d = max_d == np.nan
         else:
-            assert (intersects[:, 2] > 0).sum() == 0
-            d = np.abs(intersects[:, 2]).min()
-        depth[i_pt] = d
-    return depth
+            intersects_z = np.abs(intersects[:, 2])
+            argsort = np.argsort(intersects_z)
+            min_d = intersects_z[argsort[0]]
+            max_d = intersects_z[argsort[-1]]
+        min_depth[i_pt] = min_d
+        max_depth[i_pt] = max_d
+    return min_depth, max_depth
