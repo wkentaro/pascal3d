@@ -122,7 +122,7 @@ def raytrace_camera_frame_on_triangles(
             ray0, ray1, pts_tri0, pts_tri1, pts_tri2)
         intersects = intersects[flags == 1]
         if intersects.size == 0:
-            min_d = max_d == np.nan
+            min_d = max_d = np.nan
         else:
             intersects_z = np.abs(intersects[:, 2])
             argsort = np.argsort(intersects_z)
