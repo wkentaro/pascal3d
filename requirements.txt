@@ -6,3 +6,4 @@ Pillow
 scipy
 scikit-image
 scikit-learn
+sympy
