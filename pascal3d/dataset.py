@@ -526,7 +526,7 @@ class Pascal3DDataset(object):
             else:
                 subprocess.call(shlex.split(cmd))
             # obj file -> pcd file
-            cmd = 'pcl_mesh2pcd {} {} -no_vis_result -leaf_size 0.001'\
+            cmd = 'pcl_mesh2pcd {} {} -no_vis_result -leaf_size 0.0001'\
                 .format(obj_file, pcd_file)
             if dry_run:
                 print(cmd)
@@ -545,7 +545,7 @@ class Pascal3DDataset(object):
                           .format(pcd_file))
                 continue
             # ply file -> pcd file
-            cmd = 'pcl_mesh_sampling {} {} -no_vis_result -leaf_size 0.001'\
+            cmd = 'pcl_mesh_sampling {} {} -no_vis_result -leaf_size 0.0001'\
                 .format(obj_file, pcd_file)
             if dry_run:
                 print(cmd)
