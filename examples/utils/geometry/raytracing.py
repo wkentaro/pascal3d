@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 
-import time
-
 import matplotlib
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import numpy as np
-import PIL.Image
-import PIL.ImageDraw
 
 import pascal3d
 
