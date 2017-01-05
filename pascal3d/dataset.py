@@ -453,6 +453,7 @@ class Pascal3DDataset(object):
 
         ax1 = plt.subplot(131)
         plt.axis('off')
+        plt.title('original image')
         ax1.imshow(img)
 
         height, width = img.shape[:2]
@@ -485,10 +486,12 @@ class Pascal3DDataset(object):
 
         ax2 = plt.subplot(132)
         plt.axis('off')
+        plt.title('depth')
         ax2.imshow(depth)
 
         ax2 = plt.subplot(133)
         plt.axis('off')
+        plt.title('object depth')
         ax2.imshow(obj_depth)
 
         plt.tight_layout()
