@@ -494,7 +494,7 @@ class Pascal3DDataset(object):
         plt.tight_layout()
         plt.show()
 
-    def convert_mesh_to_pcd(self, dry_run=False):
+    def convert_mesh_to_pcd(self, dry_run=False, replace=False):
         # scrape off files
         off_files = []
         for cls in self.class_names[1:]:
@@ -509,6 +509,8 @@ class Pascal3DDataset(object):
             cad_id = osp.splitext(osp.basename(off_file))[0]
             obj_file = osp.join(cad_dir, cad_id + '.obj')
             pcd_file = osp.join(cad_dir, cad_id + '.pcd')
+            if replace and osp.exists(pcd_file):
+                os.remove(pcd_file)
             if osp.exists(pcd_file):
                 if not dry_run:
                     print('PCD file exists, so skipping: {}'
@@ -521,8 +523,8 @@ class Pascal3DDataset(object):
             else:
                 subprocess.call(shlex.split(cmd))
             # obj file -> pcd file
-            cmd = 'pcl_mesh2pcd {} {} -no_vis_result'.format(
-                obj_file, pcd_file)
+            cmd = 'pcl_mesh2pcd {} {} -no_vis_result -leaf_size 0.001'\
+                .format(obj_file, pcd_file)
             if dry_run:
                 print(cmd)
             else:
@@ -540,8 +542,8 @@ class Pascal3DDataset(object):
                           .format(pcd_file))
                 continue
             # ply file -> pcd file
-            cmd = 'pcl_mesh_sampling {} {} -no_vis_result'.format(
-                obj_file, pcd_file)
+            cmd = 'pcl_mesh_sampling {} {} -no_vis_result -leaf_size 0.001'\
+                .format(obj_file, pcd_file)
             if dry_run:
                 print(cmd)
             else:
