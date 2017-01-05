@@ -446,7 +446,7 @@ class Pascal3DDataset(object):
         plt.tight_layout()
         plt.show()
 
-    def show_depth(self, i):
+    def show_depth_by_pcd(self, i):
         data = self.get_data(i)
         img = data['img']
         objects = data['objects']
@@ -546,3 +546,85 @@ class Pascal3DDataset(object):
                 print(cmd)
             else:
                 subprocess.call(shlex.split(cmd))
+
+    def get_depth(self, i):
+        """Get depth with index.
+
+        Arguments
+        ---------
+        i: int
+            Index of data.
+
+        Yields
+        ------
+        depth, backdepth: numpy.ndarray
+            Yields standard depth and occluded depth image of 1 object.
+        """
+        data = self.get_data(i)
+        img = data['img']
+        objects = data['objects']
+        class_cads = data['class_cads']
+
+        height, width = img.shape[:2]
+        for cls, obj in objects:
+            cad = class_cads[cls][obj['cad_index']]
+            vertices = cad['vertices']
+            vertices_camframe = utils.transform_to_camera_frame(
+                vertices,
+                obj['viewpoint']['azimuth'],
+                obj['viewpoint']['elevation'],
+                obj['viewpoint']['distance'],
+            )
+            vertices_2d = utils.project_points_3d_to_2d(
+                vertices, **obj['viewpoint'])
+            faces = cad['faces'] - 1
+
+            mask_pil = PIL.Image.new('L', (width, height), 0)
+            vertices_2d = vertices_2d.astype(int)
+            for face in faces:
+                xy = vertices_2d[face].flatten().tolist()
+                PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
+            mask = np.array(mask_pil)
+            im_xy = np.vstack(np.where(mask)).T
+            im_xy = im_xy.astype(np.float64)
+
+            pt_camera_origin = np.array([0, 0, 0], dtype=np.float64)
+            pts_camera_frame = utils.project_points_2d_to_3d(
+                im_xy,
+                obj['viewpoint']['theta'],
+                obj['viewpoint']['focal'],
+                obj['viewpoint']['principal'],
+                obj['viewpoint']['viewport'],
+            )
+
+            # select triangles with sorting by distance from camera
+            # (n_triangles, n_points_tri=3, xyz=3)
+            triangles = vertices_camframe[faces]
+            indices = np.argsort(np.abs(triangles[:, :, 2]).max(axis=-1))
+            mask_pil = PIL.Image.new('L', (width, height), 0)
+            faces_sorted = faces[indices]
+            for i, face in enumerate(faces_sorted):
+                xy = vertices_2d[face].flatten().tolist()
+                PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
+                mask2 = np.array(mask_pil)
+                if mask2.sum() == mask.sum():
+                    break
+
+            pts_tri0 = vertices_camframe[faces_sorted[:i][:, 0]]
+            pts_tri1 = vertices_camframe[faces_sorted[:i][:, 1]]
+            pts_tri2 = vertices_camframe[faces_sorted[:i][:, 2]]
+
+            print('raytracing...: rays: {}, triangles: {}'
+                  .format(len(pts_camera_frame), pts_tri0.size))
+            min_depth, max_depth = utils.raytrace_camera_frame_on_triangles(
+                pt_camera_origin, pts_camera_frame,
+                pts_tri0, pts_tri1, pts_tri2)
+
+            depth = np.zeros((height, width), dtype=np.float32)
+            depth.fill(np.nan)
+            depth[mask == 1] = min_depth
+            backdepth = np.zeros((height, width), dtype=np.float32)
+            backdepth.fill(np.nan)
+            backdepth[mask == 1] = max_depth
+
+            yield depth, backdepth
