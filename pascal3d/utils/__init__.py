@@ -14,3 +14,4 @@ transform_to_camera_frame = geometry.transform_to_camera_frame
 triangle_to_aabb = geometry.triangle_to_aabb
 
 load_pcd = io.load_pcd
+load_off = io.load_off

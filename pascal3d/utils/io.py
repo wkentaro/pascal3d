@@ -47,3 +47,18 @@ def load_pcd(pcd_file):
         assert points.shape[1] == 3
 
     return points
+
+
+def load_off(off_file):
+    verts, faces = None, None
+    with open(off_file, 'r') as f:
+        verts, faces = None, None
+        assert 'OFF' in f.readline()
+        n_verts, n_faces, _ = map(int, f.readline().strip().split(' '))
+        verts = np.zeros((n_verts, 3), dtype=np.float64)
+        faces = np.zeros((n_faces, 3), dtype=np.int64)
+        for i in xrange(n_verts):
+            verts[i] = map(float, f.readline().strip().split(' '))
+        for i in xrange(n_faces):
+            faces[i] = map(int, f.readline().strip().split(' ')[1:])
+    return verts, faces
