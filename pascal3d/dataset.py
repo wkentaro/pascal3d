@@ -19,10 +19,12 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 import numpy as np
 import PIL.Image
+import PIL.ImageDraw
 import scipy.io
 import scipy.misc
 import skimage.color
 import sklearn.model_selection
+import tqdm
 
 from pascal3d import utils
 
@@ -552,7 +554,7 @@ class Pascal3DDataset(object):
             else:
                 subprocess.call(shlex.split(cmd))
 
-    def get_depth(self, i):
+    def get_depth_by_raytracing(self, i):
         """Get depth with index.
 
         Arguments
@@ -633,3 +635,66 @@ class Pascal3DDataset(object):
             backdepth[mask == 1] = max_depth
 
             yield depth, backdepth
+
+    def get_depth(self, i):
+        data = self.get_data(i)
+
+        img = data['img']
+        height, width = img.shape[:2]
+        objects = data['objects']
+        class_cads = data['class_cads']
+
+        depth = np.zeros((height, width), dtype=np.float64)
+        depth[...] = np.inf
+        max_depth = np.zeros((height, width), dtype=np.float64)
+        max_depth[...] = -np.inf
+
+        for cls, obj in objects:
+            cad = class_cads[cls][obj['cad_index']]
+            vertices = cad['vertices']
+            vertices_camframe = utils.transform_to_camera_frame(
+                vertices,
+                obj['viewpoint']['azimuth'],
+                obj['viewpoint']['elevation'],
+                obj['viewpoint']['distance'],
+            )
+            vertices_2d = utils.project_points_3d_to_2d(
+                vertices, **obj['viewpoint'])
+            faces = cad['faces'] - 1
+
+            polygons_z = np.abs(vertices_camframe[faces][:, :, 2])
+            indices = np.argsort(polygons_z.max(axis=-1))
+
+            depth_obj = np.zeros((height, width), dtype=np.float64)
+            depth_obj.fill(np.nan)
+            mask_obj = np.zeros((height, width), dtype=bool)
+            for face in tqdm.tqdm(faces[indices]):
+                xy = vertices_2d[face].ravel().tolist()
+                mask_pil = PIL.Image.new('L', (width, height), 0)
+                PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
+                mask_poly = np.array(mask_pil).astype(bool)
+                mask = np.bitwise_and(~mask_obj, mask_poly)
+                mask_obj[mask_poly] = True
+                depth_obj[mask] = -1 * vertices_camframe[face][:, 2].mean()
+
+            max_depth_obj = np.zeros((height, width), dtype=np.float64)
+            max_depth_obj.fill(np.nan)
+            mask_obj = np.zeros((height, width), dtype=bool)
+            for face in tqdm.tqdm(faces[indices[::-1]]):
+                xy = vertices_2d[face].ravel().tolist()
+                mask_pil = PIL.Image.new('L', (width, height), 0)
+                PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
+                mask_poly = np.array(mask_pil).astype(bool)
+                mask = np.bitwise_and(~mask_obj, mask_poly)
+                mask_obj[mask_poly] = True
+                max_depth_obj[mask] = -1 * vertices_camframe[face][:, 2].mean()
+
+            depth[mask_obj] = np.minimum(
+                depth[mask_obj], depth_obj[mask_obj])
+            max_depth[mask_obj] = np.minimum(
+                max_depth_obj[mask_obj], max_depth_obj[mask_obj])
+
+        depth[np.isinf(depth)] = np.nan
+        max_depth[np.isinf(max_depth)] = np.nan
+
+        return depth, max_depth
