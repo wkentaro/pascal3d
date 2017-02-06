@@ -20,8 +20,8 @@ def main():
         min_depth, max_depth = dataset.get_depth(i)
         if np.isnan(min_depth).sum() == min_depth.size:
             continue
-        min_value = min_depth[~np.isnan(min_depth)].min()
-        max_value = max_depth[~np.isnan(max_depth)].max()
+        min_value = np.nanmin(min_depth)
+        max_value = np.nanmax(max_depth)
         plt.subplot(221)
         plt.imshow(img)
         plt.subplot(222)

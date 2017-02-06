@@ -554,87 +554,87 @@ class Pascal3DDataset(object):
             else:
                 subprocess.call(shlex.split(cmd))
 
-    def get_depth_by_raytracing(self, i):
-        """Get depth with index.
-
-        Arguments
-        ---------
-        i: int
-            Index of data.
-
-        Yields
-        ------
-        depth, backdepth: numpy.ndarray
-            Yields standard depth and occluded depth image of 1 object.
-        """
-        data = self.get_data(i)
-        img = data['img']
-        objects = data['objects']
-        class_cads = data['class_cads']
-
-        height, width = img.shape[:2]
-        for cls, obj in objects:
-            cad = class_cads[cls][obj['cad_index']]
-            vertices = cad['vertices']
-            vertices_camframe = utils.transform_to_camera_frame(
-                vertices,
-                obj['viewpoint']['azimuth'],
-                obj['viewpoint']['elevation'],
-                obj['viewpoint']['distance'],
-            )
-            vertices_2d = utils.project_points_3d_to_2d(
-                vertices, **obj['viewpoint'])
-            faces = cad['faces'] - 1
-
-            mask_pil = PIL.Image.new('L', (width, height), 0)
-            vertices_2d = vertices_2d.astype(int)
-            for face in faces:
-                xy = vertices_2d[face].flatten().tolist()
-                PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
-            mask = np.array(mask_pil)
-            im_xy = np.vstack(np.where(mask)).T
-            im_xy = im_xy.astype(np.float64)
-
-            pt_camera_origin = np.array([0, 0, 0], dtype=np.float64)
-            pts_camera_frame = utils.project_points_2d_to_3d(
-                im_xy,
-                obj['viewpoint']['theta'],
-                obj['viewpoint']['focal'],
-                obj['viewpoint']['principal'],
-                obj['viewpoint']['viewport'],
-            )
-
-            # select triangles with sorting by distance from camera
-            # (n_triangles, n_points_tri=3, xyz=3)
-            triangles = vertices_camframe[faces]
-            indices = np.argsort(np.abs(triangles[:, :, 2]).max(axis=-1))
-            mask_pil = PIL.Image.new('L', (width, height), 0)
-            faces_sorted = faces[indices]
-            for i, face in enumerate(faces_sorted):
-                xy = vertices_2d[face].flatten().tolist()
-                PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
-                mask2 = np.array(mask_pil)
-                if mask2.sum() == mask.sum():
-                    break
-
-            pts_tri0 = vertices_camframe[faces_sorted[:i][:, 0]]
-            pts_tri1 = vertices_camframe[faces_sorted[:i][:, 1]]
-            pts_tri2 = vertices_camframe[faces_sorted[:i][:, 2]]
-
-            print('raytracing...: rays: {}, triangles: {}'
-                  .format(len(pts_camera_frame), pts_tri0.size))
-            min_depth, max_depth = utils.raytrace_camera_frame_on_triangles(
-                pt_camera_origin, pts_camera_frame,
-                pts_tri0, pts_tri1, pts_tri2)
-
-            depth = np.zeros((height, width), dtype=np.float32)
-            depth.fill(np.nan)
-            depth[mask == 1] = min_depth
-            backdepth = np.zeros((height, width), dtype=np.float32)
-            backdepth.fill(np.nan)
-            backdepth[mask == 1] = max_depth
-
-            yield depth, backdepth
+    # def get_depth_by_raytracing(self, i):
+    #     """Get depth with index.
+    #
+    #     Arguments
+    #     ---------
+    #     i: int
+    #         Index of data.
+    #
+    #     Yields
+    #     ------
+    #     depth, backdepth: numpy.ndarray
+    #         Yields standard depth and occluded depth image of 1 object.
+    #     """
+    #     data = self.get_data(i)
+    #     img = data['img']
+    #     objects = data['objects']
+    #     class_cads = data['class_cads']
+    #
+    #     height, width = img.shape[:2]
+    #     for cls, obj in objects:
+    #         cad = class_cads[cls][obj['cad_index']]
+    #         vertices = cad['vertices']
+    #         vertices_camframe = utils.transform_to_camera_frame(
+    #             vertices,
+    #             obj['viewpoint']['azimuth'],
+    #             obj['viewpoint']['elevation'],
+    #             obj['viewpoint']['distance'],
+    #         )
+    #         vertices_2d = utils.project_points_3d_to_2d(
+    #             vertices, **obj['viewpoint'])
+    #         faces = cad['faces'] - 1
+    #
+    #         mask_pil = PIL.Image.new('L', (width, height), 0)
+    #         vertices_2d = vertices_2d.astype(int)
+    #         for face in faces:
+    #             xy = vertices_2d[face].flatten().tolist()
+    #             PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
+    #         mask = np.array(mask_pil)
+    #         im_xy = np.vstack(np.where(mask)).T
+    #         im_xy = im_xy.astype(np.float64)
+    #
+    #         pt_camera_origin = np.array([0, 0, 0], dtype=np.float64)
+    #         pts_camera_frame = utils.project_points_2d_to_3d(
+    #             im_xy,
+    #             obj['viewpoint']['theta'],
+    #             obj['viewpoint']['focal'],
+    #             obj['viewpoint']['principal'],
+    #             obj['viewpoint']['viewport'],
+    #         )
+    #
+    #         # select triangles with sorting by distance from camera
+    #         # (n_triangles, n_points_tri=3, xyz=3)
+    #         triangles = vertices_camframe[faces]
+    #         indices = np.argsort(np.abs(triangles[:, :, 2]).max(axis=-1))
+    #         mask_pil = PIL.Image.new('L', (width, height), 0)
+    #         faces_sorted = faces[indices]
+    #         for i, face in enumerate(faces_sorted):
+    #             xy = vertices_2d[face].flatten().tolist()
+    #             PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
+    #             mask2 = np.array(mask_pil)
+    #             if mask2.sum() == mask.sum():
+    #                 break
+    #
+    #         pts_tri0 = vertices_camframe[faces_sorted[:i][:, 0]]
+    #         pts_tri1 = vertices_camframe[faces_sorted[:i][:, 1]]
+    #         pts_tri2 = vertices_camframe[faces_sorted[:i][:, 2]]
+    #
+    #         print('raytracing...: rays: {}, triangles: {}'
+    #               .format(len(pts_camera_frame), pts_tri0.size))
+    #         min_depth, max_depth = utils.raytrace_camera_frame_on_triangles(
+    #             pt_camera_origin, pts_camera_frame,
+    #             pts_tri0, pts_tri1, pts_tri2)
+    #
+    #         depth = np.zeros((height, width), dtype=np.float32)
+    #         depth.fill(np.nan)
+    #         depth[mask == 1] = min_depth
+    #         backdepth = np.zeros((height, width), dtype=np.float32)
+    #         backdepth.fill(np.nan)
+    #         backdepth[mask == 1] = max_depth
+    #
+    #         yield depth, backdepth
 
     def get_depth(self, i):
         data = self.get_data(i)
@@ -674,8 +674,36 @@ class Pascal3DDataset(object):
                 PIL.ImageDraw.Draw(mask_pil).polygon(xy=xy, outline=1, fill=1)
                 mask_poly = np.array(mask_pil).astype(bool)
                 mask = np.bitwise_and(~mask_obj, mask_poly)
-                mask_obj[mask_poly] = True
-                depth_obj[mask] = -1 * vertices_camframe[face][:, 2].mean()
+                mask_obj[mask] = True
+                #
+                if mask.sum() == 0:
+                    continue
+                #
+                ray1_xy = np.array(zip(*np.where(mask)))[:, ::-1]
+                n_rays = len(ray1_xy)
+                ray1_z = np.zeros((n_rays, 1), dtype=np.float64)
+                ray1_xyz = np.hstack((ray1_xy, ray1_z))
+                #
+                ray0_z = np.ones((n_rays, 1), dtype=np.float64)
+                ray0_xyz = np.hstack((ray1_xy, ray0_z))
+                #
+                tri0_xy = vertices_2d[face[0]]
+                tri1_xy = vertices_2d[face[1]]
+                tri2_xy = vertices_2d[face[2]]
+                tri0_z = vertices_camframe[face[0]][2]
+                tri1_z = vertices_camframe[face[1]][2]
+                tri2_z = vertices_camframe[face[2]][2]
+                tri0_xyz = np.hstack((tri0_xy, tri0_z))
+                tri1_xyz = np.hstack((tri1_xy, tri1_z))
+                tri2_xyz = np.hstack((tri2_xy, tri2_z))
+                tri0_xyz = tri0_xyz.reshape(1, -1).repeat(n_rays, axis=0)
+                tri1_xyz = tri1_xyz.reshape(1, -1).repeat(n_rays, axis=0)
+                tri2_xyz = tri2_xyz.reshape(1, -1).repeat(n_rays, axis=0)
+                #
+                flags, intersection = utils.intersect3d_ray_triangle(
+                    ray0_xyz, ray1_xyz, tri0_xyz, tri1_xyz, tri2_xyz)
+                for x, y, z in intersection[flags == 1]:
+                    depth_obj[int(y), int(x)] = -z
 
             max_depth_obj = np.zeros((height, width), dtype=np.float64)
             max_depth_obj.fill(np.nan)
@@ -687,7 +715,35 @@ class Pascal3DDataset(object):
                 mask_poly = np.array(mask_pil).astype(bool)
                 mask = np.bitwise_and(~mask_obj, mask_poly)
                 mask_obj[mask_poly] = True
-                max_depth_obj[mask] = -1 * vertices_camframe[face][:, 2].mean()
+                #
+                if mask.sum() == 0:
+                    continue
+                #
+                ray1_xy = np.array(zip(*np.where(mask)))[:, ::-1]
+                n_rays = len(ray1_xy)
+                ray1_z = np.zeros((n_rays, 1), dtype=np.float64)
+                ray1_xyz = np.hstack((ray1_xy, ray1_z))
+                #
+                ray0_z = np.ones((n_rays, 1), dtype=np.float64)
+                ray0_xyz = np.hstack((ray1_xy, ray0_z))
+                #
+                tri0_xy = vertices_2d[face[0]]
+                tri1_xy = vertices_2d[face[1]]
+                tri2_xy = vertices_2d[face[2]]
+                tri0_z = vertices_camframe[face[0]][2]
+                tri1_z = vertices_camframe[face[1]][2]
+                tri2_z = vertices_camframe[face[2]][2]
+                tri0_xyz = np.hstack((tri0_xy, tri0_z))
+                tri1_xyz = np.hstack((tri1_xy, tri1_z))
+                tri2_xyz = np.hstack((tri2_xy, tri2_z))
+                tri0_xyz = tri0_xyz.reshape(1, -1).repeat(n_rays, axis=0)
+                tri1_xyz = tri1_xyz.reshape(1, -1).repeat(n_rays, axis=0)
+                tri2_xyz = tri2_xyz.reshape(1, -1).repeat(n_rays, axis=0)
+                #
+                flags, intersection = utils.intersect3d_ray_triangle(
+                    ray0_xyz, ray1_xyz, tri0_xyz, tri1_xyz, tri2_xyz)
+                for x, y, z in intersection[flags == 1]:
+                    max_depth_obj[int(y), int(x)] = -z
 
             depth[mask_obj] = np.minimum(
                 depth[mask_obj], depth_obj[mask_obj])
