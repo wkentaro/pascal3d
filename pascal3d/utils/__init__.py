@@ -1,5 +1,6 @@
 from pascal3d.utils import geometry
 from pascal3d.utils import io
+from pascal3d.utils import visualization
 
 
 get_camera_polygon = geometry.get_camera_polygon
@@ -15,3 +16,5 @@ triangle_to_aabb = geometry.triangle_to_aabb
 
 load_pcd = io.load_pcd
 load_off = io.load_off
+
+colorize_depth = visualization.colorize_depth
