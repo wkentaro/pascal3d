@@ -565,7 +565,7 @@ class Pascal3DDataset(object):
         depth = np.zeros((height, width), dtype=np.float64)
         depth[...] = np.inf
         max_depth = np.zeros((height, width), dtype=np.float64)
-        max_depth[...] = -np.inf
+        max_depth[...] = np.inf
 
         for cls, obj in objects:
             cad = class_cads[cls][obj['cad_index']]
@@ -666,7 +666,7 @@ class Pascal3DDataset(object):
             depth[mask_obj] = np.minimum(
                 depth[mask_obj], depth_obj[mask_obj])
             max_depth[mask_obj] = np.minimum(
-                max_depth_obj[mask_obj], max_depth_obj[mask_obj])
+                max_depth[mask_obj], max_depth_obj[mask_obj])
 
         depth[np.isinf(depth)] = np.nan
         max_depth[np.isinf(max_depth)] = np.nan
