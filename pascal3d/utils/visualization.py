@@ -1,8 +1,14 @@
+from __future__ import print_function
+
+import sys
+
 import matplotlib
 import numpy as np
 
 
 def colorize_depth(depth, min_value, max_value):
+    if np.isnan(max_value):
+        print('WARNING: max_value is inf.', file=sys.stderr)
     colorized = depth.copy()
     nan_mask = np.isnan(colorized)
     colorized = 1. * (colorized - min_value) / (max_value - min_value)
