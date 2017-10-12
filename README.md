@@ -23,22 +23,22 @@ ls
 ./show_annotation.py
 ```
 
-![](static/show_annotation.png)
+<img src="static/show_annotation.png" width="50%" />
 
 ```bash
 ./show_cad_ovelay.py
 ```
 
-![](static/show_cad_overlay.png)
+<img src="static/show_cad_overlay.png" width="50%" />
 
 ```bash
 ./show_cad.py
 ```
 
-![](static/show_cad.png)
+<img src="static/show_cad.png" width="50%" />
 
 ```bash
 ./show_depth.py
 ```
 
-![](static/show_depth.png)
+<img src="static/show_depth.png" width="50%" />
