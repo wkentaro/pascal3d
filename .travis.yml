@@ -1,0 +1,41 @@
+sudo: false
+
+cache:
+  - ccache
+  - pip
+
+dist: trusty
+
+language: python
+
+python:
+  - 2.7
+
+before_install:
+  # install miniconda
+  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+
+install:
+  - ln -s $HOME/miniconda $HOME/.anaconda2
+  - conda create -q -y --name=pascal3d python=$TRAVIS_PYTHON_VERSION
+  - ./install.sh
+  - source ~/miniconda/bin/activate mvtk
+
+before_script:
+  - pip install -qq hacking pytest
+
+script:
+  - flake8 .
+  - pytest tests
+
+branches:
+  only:
+    - master
+
+notifications:
+  email: false
