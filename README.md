@@ -1,5 +1,7 @@
 # pascal3d
 
+[![Build Status](https://travis-ci.org/wkentaro/pascal3d.svg?branch=master)](https://travis-ci.org/wkentaro/pascal3d)
+
 
 Python version toolkit for [PASCAL3D](http://cvgl.stanford.edu/projects/pascal3d.html) dataset.  
 The Matlab/Octave version is supported [in official](http://cvgl.stanford.edu/projects/pascal3d.html).  
