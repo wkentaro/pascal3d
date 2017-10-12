@@ -2,7 +2,7 @@
 
 
 Python version toolkit for [PASCAL3D](http://cvgl.stanford.edu/projects/pascal3d.html) dataset.  
-(Matlab/Octave version is supported in official.)  
+(Matlab/Octave version is supported [in official](ftp://cs.stanford.edu/cs/cvgl/PASCAL3D+_release1.1.zip).)  
 
 
 ## Install
