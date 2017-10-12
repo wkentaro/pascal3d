@@ -1,4 +1,3 @@
-chainer
 Cython
 fcn
 matplotlib

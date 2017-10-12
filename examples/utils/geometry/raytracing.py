@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import matplotlib
 import matplotlib.cm
 import matplotlib.pyplot as plt
 import numpy as np

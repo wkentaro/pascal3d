@@ -10,7 +10,6 @@ import shlex
 import subprocess
 import warnings
 
-import chainer
 import cv2
 import matplotlib
 from matplotlib.collections import PatchCollection
