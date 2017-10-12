@@ -8,6 +8,7 @@ import os
 import os.path as osp
 import shlex
 import subprocess
+import warnings
 
 import chainer
 import cv2
@@ -500,6 +501,9 @@ class Pascal3DDataset(object):
         plt.show()
 
     def convert_mesh_to_pcd(self, dry_run=False, replace=False):
+        warnings.warn(
+            'Note that this method needs pcl_mesh2pcd compiled with PCL1.8 '
+            'to avoid being hanged by GUI.')
         # scrape off files
         off_files = []
         for cls in self.class_names[1:]:
