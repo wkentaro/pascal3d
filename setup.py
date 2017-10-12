@@ -27,6 +27,6 @@ setup(
     author_email='www.kentaro.wada@gmail.com',
     license='MIT',
     install_requires=open('requirements.txt').readlines(),
-    tests_require=['nose'],
+    tests_require=['pytest'],
     ext_modules=ext_modules,
 )
