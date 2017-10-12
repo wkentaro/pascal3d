@@ -16,10 +16,6 @@ Python version toolkit for [PASCAL3D](http://cvgl.stanford.edu/projects/pascal3d
 
 ```bash
 cd examples/dataset
-ls
-```
-
-```bash
 ./show_annotation.py
 ```
 
