@@ -1,5 +1,6 @@
 chainer
 Cython
+fcn
 matplotlib
 numpy
 Pillow

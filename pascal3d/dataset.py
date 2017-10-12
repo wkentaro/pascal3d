@@ -120,8 +120,8 @@ class Pascal3DDataset(object):
 
     def __init__(self, data_type):
         assert data_type in ('train', 'val')
-        self.dataset_dir = chainer.dataset.get_dataset_directory(
-            'pascal3d/PASCAL3D+_release1.1')
+        self.dataset_dir = osp.expanduser(
+            '~/data/datasets/Pascal3D/PASCAL3D+_release1.1')
         # get all data ids
         print('Generating index for annotations...')
         data_ids = []
