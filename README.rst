@@ -14,12 +14,4 @@ Install
 
 .. code-block:: bash
 
-  git clone https://github.com/wkentaro/pascal3d.git
-  cd pascal3d
-  python setup.py develop
-
-
-Usage
------
-
-You can use python scripts under ``scripts`` directory.
+  ./install.sh
