@@ -27,7 +27,7 @@ install:
   - source ~/miniconda/bin/activate pascal3d
 
 before_script:
-  - pip install -qq hacking pytest
+  - pip install -qq hacking pytest nose
 
 script:
   - flake8 .
