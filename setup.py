@@ -11,7 +11,7 @@ import numpy as np
 from skimage._build import cython
 
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 if sys.argv[-1] == 'release':
