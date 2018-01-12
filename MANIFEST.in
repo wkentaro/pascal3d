@@ -1,0 +1,1 @@
+recursive-include pascal3d *.pyx
